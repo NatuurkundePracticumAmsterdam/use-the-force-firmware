@@ -80,22 +80,22 @@ void do_cmd(const std::string& cmd) {
   switch (current_cmd) {
     case SP:
       motor.set_pos_mm(current_arg.i);
-      Serial.printf("move: %i\n", current_arg.i);
+      Serial.printf("[INFO]: move %i\n", current_arg.i);
       break;
     case SV:
       motor.set_vel_mms(current_arg.i);
-      Serial.printf("set velocity: %u\n", current_arg.i);
+      Serial.printf("[INFO]: set velocity %u\n", current_arg.i);
       break;
     case HM:
       motor.home();
-      Serial.printf("homing\n");
+      Serial.printf("[INFO]: homing\n");
       break;
     /* TODO: remove for release */
     case ID:
       Serial2.printf("ID\r\n");
       delay(50);
       response = Serial2.readString();
-      Serial.printf("ID: %s\n", response);
+      Serial.printf("[INFO]: ID %s\n", response);
       break;
     default:
       break;

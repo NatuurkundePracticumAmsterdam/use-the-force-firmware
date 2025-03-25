@@ -1,6 +1,7 @@
 # UvA-VU Z-Stage
 This repository contains firmware for setups using a load cell+HX711 with an M5Push6060 and M5DinMeter (or any other esp32-based board).
-The firmware exposes a serial interface at a baud rate of 115200, through which all communication is achieved. 
+The firmware exposes a serial interface at a baud rate of 115200, through which all communication is achieved.
+For convenience, any serial output from the microcontroller which is **not** a reading from the load cell is prefixed with ```[INFO]: ```.
 
 Any serial command follows the form: 
 ```"#" <opcode> [argument] ";"```. I.e.: a command begins with a ```#```, followed by a 2-character opcode from the list below, optionally followed by an argument, ending with a ```;```.
