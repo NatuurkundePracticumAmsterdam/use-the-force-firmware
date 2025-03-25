@@ -1,0 +1,29 @@
+#include "Motor.h"
+
+#include "HardwareSerial.h"
+
+void Motor::begin() {
+  Serial2.begin(9600, SERIAL_8N1, pin_rx_, pin_tx_);
+  delay(200);
+  Serial2.print("ID=123\r\n");
+  home();
+}
+
+void Motor::set_pos_mm(uint8_t mm) {
+  if (pos_mm_ == (uint8_t) -1) {
+    Serial.println("[INFO]: cannot move before homing");
+    return;
+  }
+  Serial2.printf("ID123:X%u\r\n", mm);
+  pos_mm_ = mm;
+}
+
+void Motor::set_vel_mms(uint8_t mms) {
+  Serial2.printf("ID123:F%u\r\n", mms);
+}
+
+void Motor::home() {
+  Serial2.printf("ID123Z\r\n");
+  pos_mm_ = 0;
+  set_pos_mm(max_pos_mm_);
+}

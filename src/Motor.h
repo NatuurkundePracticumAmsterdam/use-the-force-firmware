@@ -1,0 +1,30 @@
+#ifndef MOTOR_H
+#define MOTOR_H
+
+#include <cstdint>
+
+class Motor {
+public:
+  Motor() = default;
+  virtual ~Motor() = default;
+
+  void begin();
+
+  void set_pos_mm(uint8_t mm);
+  void set_vel_mms(uint8_t mms);
+  void home();
+
+  uint8_t get_pos_mm() { return pos_mm_; }
+  uint8_t get_vel_mms() { return vel_mms_; }
+
+private:
+  const uint8_t max_vel_mm_ = 200;
+  const uint8_t max_pos_mm_ = 46;  /* 47 mm hits the physical top */
+  uint8_t vel_mms_ = 200;
+  uint8_t pos_mm_ = -1;
+
+  const uint8_t pin_rx_ = 1;
+  const uint8_t pin_tx_ = 2;
+};
+
+#endif // !MOTOR_H
