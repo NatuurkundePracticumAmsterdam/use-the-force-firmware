@@ -10,11 +10,11 @@
   X(SP)  /* set pos in mm */                      \
   X(GP)  /* get pos in mm */                      \
   X(SV)  /* set velocity in mm/s */               \
-  X(GS)  /* get speed in mm/s */                  \
+  X(GV)  /* get velocity in mm/s */               \
   X(CR)  /* continuous read for n milliseconds */ \
   X(SR)  /* single read */                        \
   X(ID)  /* get motor id */                       \
-  X(ZR)  /* home stage */                         \
+  X(HM)  /* home stage */                         \
   X(TR)  /* tare load cell */                     \
   X(CL)  /* calibrate load cell */                \
   X(SF)  /* set calib force */                    \
@@ -86,7 +86,7 @@ void do_cmd(const std::string& cmd) {
       motor.set_vel_mms(current_arg.i);
       Serial.printf("set velocity: %u\n", current_arg.i);
       break;
-    case ZR:
+    case HM:
       motor.home();
       Serial.printf("homing\n");
       break;
