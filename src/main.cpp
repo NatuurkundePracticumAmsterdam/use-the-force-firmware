@@ -1,23 +1,29 @@
+#include "LoadCell.h"
 #include "Motor.h"
 
 #include "HardwareSerial.h"
 #include <Arduino.h>
 #include "HX711.h"
+#include "esp32-hal-timer.h"
 
 #include <string>
 
-#define PIN_SDA 15
-#define PIN_SCL 13
-
 void do_cmd(const std::string& cmd);
+void IRAM_ATTR timer_cb();
 
-HX711 lc;
+#define CPU_FREQ_KHZ 8000
+
 Motor motor;
+LoadCell lc;
+hw_timer_t *timer = NULL;
 
 void setup() {
   Serial.begin(115200);
-  lc.begin(PIN_SDA, PIN_SCL);
   motor.begin();
+  lc.begin();
+  /* using freq in khz we can mul target millis by 10 and fit both vals in arr and psc */
+  timer = timerBegin(0, CPU_FREQ_KHZ, true);
+  timerAttachInterrupt(timer, &timer_cb, true);
 }
 
 void loop() {

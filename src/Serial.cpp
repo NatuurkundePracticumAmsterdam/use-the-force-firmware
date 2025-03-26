@@ -1,8 +1,12 @@
-#include "HardwareSerial.h"
+#include "LoadCell.h"
 #include "Motor.h"
 
+#include "esp32-hal-timer.h"
+#include "HardwareSerial.h"
+#include "esp_timer.h"
+
 #include <cstring>
-#include <sstream>
+#include <vector>
 #include <string>
 #include <cmath>
 
@@ -14,6 +18,8 @@
   X(CR)  /* continuous read for n milliseconds */ \
   X(SR)  /* single read */                        \
   X(ID)  /* get motor id */                       \
+  X(GM)  /* get read mode */                      \
+  X(TM)  /* toggle read mode */                   \
   X(HM)  /* home stage */                         \
   X(TR)  /* tare load cell */                     \
   X(CL)  /* calibrate load cell */                \
@@ -30,9 +36,31 @@ union arg {
   float f;
 };
 
+extern hw_timer_t *timer;
+uint32_t timer_cb_iter = 0;
+uint64_t timer_start_us = 0;
+
 int8_t current_cmd;
-union arg current_arg;
+union arg current_args[2];
+
 extern Motor motor;
+extern LoadCell lc;
+
+static void get_args(const std::string& cmd, std::vector<std::string>& vec) {
+  if (cmd.length() <= 4) {
+    vec = {};
+    return;
+  }
+  std::string args = cmd.substr(3, cmd.length() - 4);
+  auto begin = args.begin();
+  for (auto c = args.begin(); c <= args.end(); c++) {
+    if (c == args.end() || *c == ',') {
+      vec.push_back(std::string(begin, c));
+      if (c != args.end())
+        begin = c + 1;
+    }
+  }
+}
 
 static void parse_cmd(const std::string& cmd) {
   bool valid = true;
@@ -59,19 +87,34 @@ static void parse_cmd(const std::string& cmd) {
     return;
   }
 
-  if (cmd.length() > 4) {
-    const std::string& arg = cmd.substr(3);
-    if (current_cmd == SF) {  /* only cmd to take a float as arg */
-      current_arg.f = std::stof(arg);
-    }
-    else {  /* all others take int */
-      current_arg.i = std::stoi(arg);
+  std::vector<std::string> args;
+  get_args(cmd, args);
+  if (!args.empty()) {
+    switch (current_cmd) {
+      case SF:
+        current_args[0].f = atof(args[0].c_str());
+        break;
+      case CR:
+        current_args[1].i = atoi(args[1].c_str());
+      default:
+        current_args[0].i = atoi(args[0].c_str());
+        break;
     }
   }
 }
 
+void IRAM_ATTR timer_cb() {
+  Serial.printf("timer: %u\n", (esp_timer_get_time() - timer_start_us) / 1000);
+  // double val = lc.read(3);
+
+  // uint64_t ms = esp_timer_get_time() - timer_start_us) / 1000;
+  timer_cb_iter--;
+  if (timer_cb_iter == 0) {
+    timerStop(timer);
+  }
+}
+
 void do_cmd(const std::string& cmd) {
-  String response;
   parse_cmd(cmd);
   if (current_cmd == (uint32_t) -1) {
     Serial.println("[INFO]: invalid command");
@@ -79,23 +122,36 @@ void do_cmd(const std::string& cmd) {
   }
   switch (current_cmd) {
     case SP:
-      motor.set_pos_mm(current_arg.i);
-      Serial.printf("[INFO]: move %i\n", current_arg.i);
+      motor.set_pos_mm(current_args[0].i);
+      Serial.printf("[INFO]: move %i\n", current_args[0].i);
+      break;
+    case GP:
+      Serial.printf("[POS]: %u\n", motor.get_pos_mm());
       break;
     case SV:
-      motor.set_vel_mms(current_arg.i);
-      Serial.printf("[INFO]: set velocity %u\n", current_arg.i);
+      motor.set_vel_mms(current_args[0].i);
+      Serial.printf("[INFO]: set velocity %u\n", current_args[0].i);
       break;
     case HM:
       motor.home();
       Serial.printf("[INFO]: homing\n");
       break;
+    case SR:
+      /* adjust readme to reflect actual behaviour */
+      Serial.printf("%f\n", lc.read());
+      break;
+    case CR:
+      timer_cb_iter = current_args[0].i;
+      timer_start_us = esp_timer_get_time();
+      timerAlarmWrite(timer, std::round(current_args[1].i * 10), true);
+      timerAlarmEnable(timer);
+      timerStart(timer);
+      break;
     /* TODO: remove for release */
     case ID:
       Serial2.printf("ID\r\n");
       delay(50);
-      response = Serial2.readString();
-      Serial.printf("[INFO]: ID %s\n", response);
+      Serial.printf("[INFO]: ID %s\n", Serial2.readString());
       break;
     default:
       break;
