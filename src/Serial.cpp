@@ -10,12 +10,10 @@
 #include <string>
 #include <cmath>
 
+/* important: cmds must be sorted by number of args, ascendingly */
 #define COMMANDS                                  \
-  X(SP)  /* set pos in mm */                      \
   X(GP)  /* get pos in mm */                      \
-  X(SV)  /* set velocity in mm/s */               \
   X(GV)  /* get velocity in mm/s */               \
-  X(CR)  /* continuous read for n milliseconds */ \
   X(SR)  /* single read */                        \
   X(ID)  /* get motor id */                       \
   X(GM)  /* get read mode */                      \
@@ -23,7 +21,11 @@
   X(HM)  /* home stage */                         \
   X(TR)  /* tare load cell */                     \
   X(CL)  /* calibrate load cell */                \
+  X(SC)  /* save loadcell config to flash */      \
   X(SF)  /* set calib force */                    \
+  X(SP)  /* set pos in mm */                      \
+  X(SV)  /* set velocity in mm/s */               \
+  X(CR)  /* continuous read for n milliseconds */ \
 
 enum commands {
   #define X(cmd) cmd,
@@ -45,6 +47,16 @@ union arg current_args[2];
 
 extern Motor motor;
 extern LoadCell lc;
+
+static bool correct_num_args(uint8_t num_args) {
+  if (current_cmd < SF && num_args == 0)
+    return true;
+  if (current_cmd < CR && num_args == 1)
+    return true;
+  if (current_cmd == CR && num_args == 2)
+    return true;
+  return false;
+}
 
 static void get_args(const std::string& cmd, std::vector<std::string>& vec) {
   if (cmd.length() <= 4) {
@@ -101,6 +113,8 @@ static void parse_cmd(const std::string& cmd) {
         break;
     }
   }
+  if (!correct_num_args(args.size()))
+    current_cmd = -1;
 }
 
 void IRAM_ATTR timer_cb() {
@@ -117,7 +131,7 @@ void IRAM_ATTR timer_cb() {
 void do_cmd(const std::string& cmd) {
   parse_cmd(cmd);
   if (current_cmd == (uint32_t) -1) {
-    Serial.println("[INFO]: invalid command");
+    Serial.println("[ERROR]: invalid command");
     return;
   }
   switch (current_cmd) {
@@ -136,16 +150,40 @@ void do_cmd(const std::string& cmd) {
       motor.home();
       Serial.printf("[INFO]: homing\n");
       break;
+    case GM:
+      Serial.printf("[INFO]: current mode is %s\n", lc.get_mode() ? "cal" : "raw");
+      break;
+    case TM:
+      Serial.printf("[INFO]: toggling mode\n");
+      lc.toggle_mode();
+      break;
     case SR:
       /* adjust readme to reflect actual behaviour */
-      Serial.printf("%f\n", lc.read());
+      Serial.printf("[VALUE]: %f\n", lc.read());
       break;
     case CR:
       timer_cb_iter = current_args[0].i;
       timer_start_us = esp_timer_get_time();
+      timerWrite(timer, 0);
       timerAlarmWrite(timer, std::round(current_args[1].i * 10), true);
       timerAlarmEnable(timer);
       timerStart(timer);
+      break;
+    case TR:
+      Serial.printf("[INFO]: tare loadcell\n");
+      lc.tare();
+      break;
+    case CL:
+      Serial.printf("[INFO]: ready for calibration\n");
+      lc.zero();
+      break;
+    case SF:
+      Serial.printf("[INFO]: calibrating loadcell with value: %f\n", current_args[0].f);
+      lc.set_slope(current_args[0].f);
+      break;
+    case SC:
+      Serial.printf("[INFO]: writing load cell config to flash\n");
+      lc.save_state();
       break;
     /* TODO: remove for release */
     case ID:
@@ -154,6 +192,7 @@ void do_cmd(const std::string& cmd) {
       Serial.printf("[INFO]: ID %s\n", Serial2.readString());
       break;
     default:
+      Serial.printf("not yet implemented\n");
       break;
   }
   return;

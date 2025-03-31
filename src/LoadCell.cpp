@@ -3,9 +3,11 @@
 
 void LoadCell::begin(uint8_t dout_pin, uint8_t sck_pin) {
   nvs_util::init();
-  auto  handle = nvs_util::get_handle();
+  auto handle = nvs_util::get_handle();
+  calibrated_ = false;
   calibrated_ |= nvs_util::read("offset_", offset_, handle.get());
-  calibrated_ |= nvs_util::read("slope_", slope_, handle.get());
+  calibrated_ &= nvs_util::read("slope_", slope_, handle.get());
+  mode_ = calibrated_;
 
   loadcell_.begin(dout_pin, sck_pin);
   loadcell_.set_offset(offset_);

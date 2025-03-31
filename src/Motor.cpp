@@ -10,11 +10,11 @@ void Motor::begin() {
 
 void Motor::set_pos_mm(uint8_t mm) {
   if (pos_mm_ == (uint8_t) -1) {
-    Serial.println("[INFO]: cannot move before homing");
+    Serial.println("[ERROR]: cannot move before homing");
     return;
   }
   if (mm > max_pos_mm_) {
-    Serial.println("[INFO]: requested pos is outside of valid range");
+    Serial.println("[ERROR]: requested pos is outside of valid range");
     return;
   }
   Serial2.printf("ID123:X%u\r\n", mm);
@@ -23,7 +23,7 @@ void Motor::set_pos_mm(uint8_t mm) {
 
 void Motor::set_vel_mms(uint8_t mms) {
   if (mms > max_vel_mms_) {
-    Serial.println("[INFO]: requested velocity is outside of valid range");
+    Serial.println("[ERROR]: requested velocity is outside of valid range");
     return;
   }
   Serial2.printf("ID123:F%u\r\n", mms);
