@@ -118,10 +118,10 @@ static void parse_cmd(const std::string& cmd) {
 }
 
 void IRAM_ATTR timer_cb() {
-  Serial.printf("timer: %u\n", (esp_timer_get_time() - timer_start_us) / 1000);
-  // double val = lc.read(3);
+  double val = lc.read(3);
+  uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
+  Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
 
-  // uint64_t ms = esp_timer_get_time() - timer_start_us) / 1000;
   timer_cb_iter--;
   if (timer_cb_iter == 0) {
     timerStop(timer);
@@ -158,7 +158,6 @@ void do_cmd(const std::string& cmd) {
       lc.toggle_mode();
       break;
     case SR:
-      /* adjust readme to reflect actual behaviour */
       Serial.printf("[VALUE]: %f\n", lc.read());
       break;
     case CR:
@@ -184,15 +183,6 @@ void do_cmd(const std::string& cmd) {
     case SC:
       Serial.printf("[INFO]: writing load cell config to flash\n");
       lc.save_state();
-      break;
-    /* TODO: remove for release */
-    case ID:
-      Serial2.printf("ID\r\n");
-      delay(50);
-      Serial.printf("[INFO]: ID %s\n", Serial2.readString());
-      break;
-    default:
-      Serial.printf("not yet implemented\n");
       break;
   }
   return;
