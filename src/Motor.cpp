@@ -33,5 +33,5 @@ void Motor::set_vel_mms(uint8_t mms) {
 void Motor::home() {
   Serial2.printf("ID123Z\r\n");
   pos_mm_ = 0;
-  set_pos_mm(max_pos_mm_);
+  set_pos_mm(1);
 }

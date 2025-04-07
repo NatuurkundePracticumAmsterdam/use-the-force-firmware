@@ -18,9 +18,9 @@ public:
   uint8_t get_vel_mms() const { return vel_mms_; }
 
 private:
-  const uint8_t max_vel_mms_ = 200;
+  const uint8_t max_vel_mms_ = 100;
   const uint8_t max_pos_mm_ = 46;  /* 47 mm hits the physical top */
-  uint8_t vel_mms_ = 200;
+  uint8_t vel_mms_ = 100;
   uint8_t pos_mm_ = -1;
 
   const uint8_t pin_rx_ = 1;
