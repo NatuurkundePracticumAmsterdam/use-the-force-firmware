@@ -18,6 +18,7 @@ LoadCell lc;
 hw_timer_t *timer = NULL;
 
 void setup() {
+  Serial.setTimeout(20); // 20ms timeout for serial read
   Serial.begin(115200);
   motor.begin();
   lc.begin();
