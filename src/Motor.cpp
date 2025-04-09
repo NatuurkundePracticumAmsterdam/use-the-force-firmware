@@ -35,3 +35,8 @@ void Motor::home() {
   pos_mm_ = 0;
   set_pos_mm(max_pos_mm_);
 }
+
+void Motor::abort() {
+  Serial2.printf("\x18\r\n");
+  Serial.println("[ERROR]: movement aborted, home to unlock");
+}

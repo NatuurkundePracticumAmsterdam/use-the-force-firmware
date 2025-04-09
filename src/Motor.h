@@ -13,6 +13,7 @@ public:
   void set_pos_mm(uint8_t mm);
   void set_vel_mms(uint8_t mms);
   void home();
+  void abort();
 
   uint8_t get_pos_mm() const { return pos_mm_; }
   uint8_t get_vel_mms() const { return vel_mms_; }
