@@ -16,6 +16,7 @@
 
 /* important: cmds must be sorted by number of args, ascendingly */
 #define COMMANDS                                  \
+  /* 0 Arguments */                               \
   X(AB)  /* abort continuous read */              \
   X(GP)  /* get pos in mm */                      \
   X(GV)  /* get velocity in mm/s */               \
@@ -28,8 +29,10 @@
   X(CL)  /* calibrate load cell */                \
   X(SC)  /* save loadcell config to flash */      \
   X(SF)  /* set calib force */                    \
+  /* 1 Argument */                                \
   X(SP)  /* set pos in mm */                      \
   X(SV)  /* set velocity in mm/s */               \
+  /* 2 Arguments */                               \
   X(CR)  /* continuous read for n milliseconds */ \
 
 enum commands {
