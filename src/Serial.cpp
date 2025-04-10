@@ -11,7 +11,7 @@
 #include <cmath>
 
 #ifndef NUM_READS
-#define NUM_READS 3
+#define NUM_READS 1
 #endif
 
 /* important: cmds must be sorted by number of args, ascendingly */
@@ -146,6 +146,10 @@ void do_cmd(const std::string& cmd) {
   switch (current_cmd) {
     case AB:
       timer0_isr_iter = 0;
+      break;
+    case ST:
+      motor.abort();
+      Serial.printf("[INFO]: stopping motor\n");
       break;
     case SP:
       motor.set_pos_mm(current_args[0].i);
