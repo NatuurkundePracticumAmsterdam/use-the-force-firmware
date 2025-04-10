@@ -6,6 +6,8 @@ Serial output is prefixed with a label, to allow for client-side filtering. Belo
 - ```[ERROR]: ```: An error occurred while processing the command.
 - ```[VALUE]: ```: A value read from the load cell.
 - ```[TIME;VALUE]: ```: A value read from the load cell, accompanied by a timestamp denoting the number of ms since the first read related to this one.
+- ```[VEL]: ```: Motor velocity in mm/s.
+- ```[POS]: ```: Motor position in mm.
 
 Any serial command follows the form: 
 ```"#" <opcode> [argument[,argument]] ";"```. I.e.: a command begins with a ```#```, followed by a 2-character opcode from the list below, optionally followed by up to two comma-separated arguments, ending with a ```;```.
@@ -20,6 +22,7 @@ Any serial command follows the form:
  - ```TM```: Toggle mode. Switch between the two modes mentioned above.
  - ```SR```: Single Read. Takes no argument. Returns the load cell's value in the same unit it was calibrated with, or in counts if operating in raw mode.
  - ```CR```: Continuous Read. Takes two integers in range [1, INT_MAX or 2147483647]. The first argument represents the number of reads to perform. The second argument represents the number of milliseconds in between reads. It streams values to the serial port in the format: ```timestamp;value``` where ```timestamp``` is the number of milliseconds since starting execution of the command, and ```value``` is the same as described above.
+ - ```AB```: Abort continuous read. Takes no argument. If called while a continuous read is active, at most one more read will occur.
  - ```HM```: Home. Takes no argument. Homes the stage. This is done by translating downwards until the stop is hit, and then translating upwards 46 mm (the maximum height).
  - ```TR```: Tare. Takes no argument. Sets the load cell's current reading as its offset, effectively zeroing it.
  - ```CL```: Calibrate. Takes no argument. Starts the load cell calibration sequence. Tares the load cell and sets its slope to 1. After calling this command, the caller should apply a known calibration force to the cell, and provide that value as an argument to the below command.
@@ -32,6 +35,10 @@ Any serial command follows the form:
 
 ## Building and flashing the firmware
 For convenience, a ```platformio.ini``` file is provided. This makes managing dependencies, building, and flashing fairly straightforward. For instructions on the installation of PlatformIO for your specific platform, please refer to the official documentation.
+
+Two build flags defined in ```platformio.ini``` are of special interest when compiling:
+- ```MAX_COUNTS``` sets the maximum number of counts read from the adc before stopping the motor forcefully. Note that if the physical load cell is mounted with its natural positive direction opposite to the force applied, integer overflow can cause unexpected results.
+- ```NUM_READS``` sets the number of readings that should be averaged for each value returned by a continuous read.
 
 To build the firmware, run the following command from the root directory: ```pio run```.
 
