@@ -23,6 +23,7 @@ Any serial command follows the form:
  - ```SR```: Single Read. Takes no argument. Returns the load cell's value in the same unit it was calibrated with, or in counts if operating in raw mode.
  - ```CR```: Continuous Read. Takes two integers in range [1, INT_MAX or 2147483647]. The first argument represents the number of reads to perform. The second argument represents the number of milliseconds in between reads. It streams values to the serial port in the format: ```timestamp;value``` where ```timestamp``` is the number of milliseconds since starting execution of the command, and ```value``` is the same as described above.
  - ```AB```: Abort continuous read. Takes no argument. If called while a continuous read is active, at most one more read will occur.
+ - ```ST```: Stop motor. Takes no argument. If called will simulate counts going above threshold.
  - ```HM```: Home. Takes no argument. Homes the stage. This is done by translating downwards until the stop is hit, and then translating upwards 46 mm (the maximum height).
  - ```TR```: Tare. Takes no argument. Sets the load cell's current reading as its offset, effectively zeroing it.
  - ```CL```: Calibrate. Takes no argument. Starts the load cell calibration sequence. Tares the load cell and sets its slope to 1. After calling this command, the caller should apply a known calibration force to the cell, and provide that value as an argument to the below command.
