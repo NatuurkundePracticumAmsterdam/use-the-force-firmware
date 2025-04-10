@@ -18,6 +18,7 @@
 #define COMMANDS                                  \
   /* 0 Arguments */                               \
   X(AB)  /* abort continuous read */              \
+  X(ST)  /* stop motor */                         \
   X(GP)  /* get pos in mm */                      \
   X(GV)  /* get velocity in mm/s */               \
   X(SR)  /* single read */                        \
