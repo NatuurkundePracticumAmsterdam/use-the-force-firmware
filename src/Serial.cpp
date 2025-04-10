@@ -118,7 +118,7 @@ static void parse_cmd(const std::string& cmd) {
 }
 
 void IRAM_ATTR timer_cb() {
-  double val = lc.read(1);
+  double val = lc.read(3);
   uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
   Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
 
