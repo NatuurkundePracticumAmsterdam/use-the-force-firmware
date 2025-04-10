@@ -10,8 +10,13 @@
 #include <string>
 #include <cmath>
 
+#ifndef NUM_READS
+#define NUM_READS 3
+#endif
+
 /* important: cmds must be sorted by number of args, ascendingly */
 #define COMMANDS                                  \
+  X(AB)  /* abort continuous read */              \
   X(GP)  /* get pos in mm */                      \
   X(GV)  /* get velocity in mm/s */               \
   X(SR)  /* single read */                        \
@@ -38,8 +43,8 @@ union arg {
   float f;
 };
 
-extern hw_timer_t *timer;
-uint32_t timer_cb_iter = 0;
+extern hw_timer_t *timer0;
+uint32_t timer0_isr_iter = 0;
 uint64_t timer_start_us = 0;
 
 int8_t current_cmd;
@@ -117,14 +122,14 @@ static void parse_cmd(const std::string& cmd) {
     current_cmd = -1;
 }
 
-void IRAM_ATTR timer_cb() {
-  double val = lc.read(1);
+void IRAM_ATTR timer0_isr() {
+  double val = lc.read(NUM_READS);
   uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
   Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
 
-  timer_cb_iter--;
-  if (timer_cb_iter == 0) {
-    timerStop(timer);
+  timer0_isr_iter--;
+  if (timer0_isr_iter <= 0) {
+    timerStop(timer0);
   }
 }
 
@@ -135,6 +140,9 @@ void do_cmd(const std::string& cmd) {
     return;
   }
   switch (current_cmd) {
+    case AB:
+      timer0_isr_iter = 0;
+      break;
     case SP:
       motor.set_pos_mm(current_args[0].i);
       Serial.printf("[INFO]: move %i\n", current_args[0].i);
@@ -145,6 +153,9 @@ void do_cmd(const std::string& cmd) {
     case SV:
       motor.set_vel_mms(current_args[0].i);
       Serial.printf("[INFO]: set velocity %u\n", current_args[0].i);
+      break;
+    case GV:
+      Serial.printf("[VEL]: %u\n", motor.get_vel_mms());
       break;
     case HM:
       motor.home();
@@ -161,12 +172,12 @@ void do_cmd(const std::string& cmd) {
       Serial.printf("[VALUE]: %f\n", lc.read());
       break;
     case CR:
-      timer_cb_iter = current_args[0].i;
+      timer0_isr_iter = current_args[0].i;
       timer_start_us = esp_timer_get_time();
-      timerWrite(timer, 0);
-      timerAlarmWrite(timer, std::round(current_args[1].i * 10), true);
-      timerAlarmEnable(timer);
-      timerStart(timer);
+      timerWrite(timer0, 0);
+      timerAlarmWrite(timer0, std::round(current_args[1].i * 10), true);
+      timerAlarmEnable(timer0);
+      timerStart(timer0);
       break;
     case TR:
       Serial.printf("[INFO]: tare loadcell\n");

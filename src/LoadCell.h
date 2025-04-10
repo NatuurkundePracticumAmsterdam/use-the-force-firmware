@@ -18,9 +18,11 @@ class LoadCell {
   void zero(); /* call before placing calibration weight and setting slope */
   void set_slope(double newtons); /* call after zeroing and placing calibration weight */
   double read(uint8_t i = 1);
+  uint32_t quick_read();
 
   bool is_calibrated() const { return calibrated_; }
   bool get_mode() const { return mode_; }
+  bool get_offset() const { return offset_; }
   void toggle_mode() { mode_ = !mode_; }
 
   private:
