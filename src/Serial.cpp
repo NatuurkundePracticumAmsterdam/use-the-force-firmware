@@ -11,21 +11,22 @@
 #include <cmath>
 
 /* important: cmds must be sorted by number of args, ascendingly */
-#define COMMANDS                                  \
-  X(GP)  /* get pos in mm */                      \
-  X(GV)  /* get velocity in mm/s */               \
-  X(SR)  /* single read */                        \
-  X(ID)  /* get motor id */                       \
-  X(GM)  /* get read mode */                      \
-  X(TM)  /* toggle read mode */                   \
-  X(HM)  /* home stage */                         \
-  X(TR)  /* tare load cell */                     \
-  X(CL)  /* calibrate load cell */                \
-  X(SC)  /* save loadcell config to flash */      \
-  X(SF)  /* set calib force */                    \
-  X(SP)  /* set pos in mm */                      \
-  X(SV)  /* set velocity in mm/s */               \
-  X(CR)  /* continuous read for n milliseconds */ \
+#define COMMANDS                                              \
+  X(GP)  /* get pos in mm */                                  \
+  X(GV)  /* get velocity in mm/s */                           \
+  X(SR)  /* single read */                                    \
+  X(ID)  /* get motor id */                                   \
+  X(GM)  /* get read mode */                                  \
+  X(TM)  /* toggle read mode */                               \
+  X(HM)  /* home stage */                                     \
+  X(TR)  /* tare load cell */                                 \
+  X(CL)  /* calibrate load cell */                            \
+  X(SC)  /* save loadcell config to flash */                  \
+  X(SF)  /* set calib force */                                \
+  X(SP)  /* set pos in mm */                                  \
+  X(SV)  /* set velocity in mm/s */                           \
+  X(CC)  /* continuous continuous read for n milliseconds */  \
+  X(CR)  /* continuous read for n milliseconds */             \
 
 enum commands {
   #define X(cmd) cmd,
@@ -38,6 +39,7 @@ union arg {
   float f;
 };
 
+bool constantconstantread = false;
 extern hw_timer_t *timer;
 uint32_t timer_cb_iter = 0;
 uint64_t timer_start_us = 0;
@@ -122,9 +124,11 @@ void IRAM_ATTR timer_cb() {
   uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
   Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
 
-  timer_cb_iter--;
-  if (timer_cb_iter == 0) {
-    timerStop(timer);
+  if (!constantconstantread) {
+    timer_cb_iter--;
+    if (timer_cb_iter == 0) {
+      timerStop(timer);
+    }
   }
 }
 
@@ -167,6 +171,21 @@ void do_cmd(const std::string& cmd) {
       timerAlarmWrite(timer, std::round(current_args[1].i * 10), true);
       timerAlarmEnable(timer);
       timerStart(timer);
+      break;
+    case CC:
+      if (!constantconstantread){
+        constantconstantread = true;
+        timer_cb_iter = 1;
+        timer_start_us = esp_timer_get_time();
+        timerWrite(timer, 0);
+        timerAlarmWrite(timer, std::round(current_args[0].i * 10), true);
+        timerAlarmEnable(timer);
+        timerStart(timer);
+      }
+      else {
+        constantconstantread = false;
+        timerStop(timer);
+      }
       break;
     case TR:
       Serial.printf("[INFO]: tare loadcell\n");
