@@ -95,12 +95,12 @@ void poll_lc_active() {
   }
   else if (returnRead) {
     if (singleRead) {
-      Serial.printf("[VALUE]: %u\n", val);
+      Serial.printf("[VALUE]: %d\n", val);
       singleRead = false;
     }
     else {
       uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
-      Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
+      Serial.printf("[TIME;VALUE]: %u;%d\n", timediff_ms, val);
     }
     returnRead = false;
   }

@@ -43,6 +43,6 @@ double LoadCell::read(uint8_t i) {
   return loadcell_.read_average(i);
 }
 
-uint32_t LoadCell::quick_read() {
-  return loadcell_.read();
+long LoadCell::quick_read() {
+  return static_cast<int32_t>(loadcell_.read());
 }
