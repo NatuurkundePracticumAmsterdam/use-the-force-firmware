@@ -1,5 +1,6 @@
 #include "LoadCell.h"
 #include "Motor.h"
+#include "Poll.h"
 
 #include "HardwareSerial.h"
 #include <Arduino.h>
@@ -12,6 +13,18 @@
 
 #ifndef MAX_COUNTS
 #define MAX_COUNTS UINT32_MAX
+#endif
+
+#ifndef CHECK_INTERVAL_MULT
+#define CHECK_INTERVAL_MULT 1
+#endif
+
+#ifndef SERIAL_TIMEOUT
+#define SERIAL_TIMEOUT 20
+#endif
+
+#ifndef LOOP_DELAY
+#define LOOP_DELAY 50
 #endif
 
 Motor motor;
@@ -27,15 +40,11 @@ void IRAM_ATTR timer1_isr() { should_poll = true; }
 
 static void poll_lc() {
   should_poll = false;
-  uint32_t val = lc.quick_read();
-  if (val > MAX_COUNTS) {
-    motor.abort();
-    Serial.println("[ERROR]: strain too high, stopping motor now");
-  }
+  poll_lc_active();
 }
 
 void setup() {
-  Serial.setTimeout(20); // 20ms timeout for serial read
+  Serial.setTimeout(SERIAL_TIMEOUT); // 20ms timeout for serial read
   Serial.begin(115200);
   motor.begin();
   lc.begin();
@@ -43,7 +52,7 @@ void setup() {
   timer0 = timerBegin(0, CPU_FREQ_KHZ, true);
   timerAttachInterrupt(timer0, &timer0_isr, true);
 
-  timer1 = timerBegin(1, CPU_FREQ_KHZ, true);
+  timer1 = timerBegin(1, CPU_FREQ_KHZ*CHECK_INTERVAL_MULT, true);
   timerAttachInterrupt(timer1, &timer1_isr, true);
   timerAlarmWrite(timer1, 100*10, true);
   timerAlarmEnable(timer1);
@@ -56,5 +65,5 @@ void loop() {
   }
   if (should_poll)
     poll_lc();
-  delay(50);
+  delay(LOOP_DELAY);
 }

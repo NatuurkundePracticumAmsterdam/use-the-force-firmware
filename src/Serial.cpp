@@ -1,5 +1,6 @@
 #include "LoadCell.h"
 #include "Motor.h"
+#include "Poll.h"
 
 #include "esp32-hal-timer.h"
 #include "HardwareSerial.h"
@@ -54,6 +55,9 @@ uint64_t timer_start_us = 0;
 int8_t current_cmd;
 union arg current_args[2];
 
+bool returnRead = false;
+bool singleRead = false;
+
 extern Motor motor;
 extern LoadCell lc;
 
@@ -80,6 +84,25 @@ static void get_args(const std::string& cmd, std::vector<std::string>& vec) {
       if (c != args.end())
         begin = c + 1;
     }
+  }
+}
+
+void poll_lc_active() {
+  int32_t val = lc.quick_read();
+  if (abs(val) > MAX_COUNTS) {
+    motor.abort();
+    // Serial.println("[ERROR]: strain too high, stopping motor now");
+  }
+  else if (returnRead) {
+    if (singleRead) {
+      Serial.printf("[VALUE]: %u\n", val);
+      singleRead = false;
+    }
+    else {
+      uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
+      Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
+    }
+    returnRead = false;
   }
 }
 
@@ -127,9 +150,7 @@ static void parse_cmd(const std::string& cmd) {
 }
 
 void IRAM_ATTR timer0_isr() {
-  double val = lc.read(NUM_READS);
-  uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
-  Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
+  returnRead = true;
 
   timer0_isr_iter--;
   if (timer0_isr_iter <= 0) {
@@ -177,7 +198,8 @@ void do_cmd(const std::string& cmd) {
       lc.toggle_mode();
       break;
     case SR:
-      Serial.printf("[VALUE]: %f\n", lc.read());
+      returnRead = true;
+      singleRead = true;
       break;
     case CR:
       timer0_isr_iter = current_args[0].i;
@@ -186,6 +208,7 @@ void do_cmd(const std::string& cmd) {
       timerAlarmWrite(timer0, std::round(current_args[1].i * 10), true);
       timerAlarmEnable(timer0);
       timerStart(timer0);
+      returnRead = true;
       break;
     case TR:
       Serial.printf("[INFO]: tare loadcell\n");
