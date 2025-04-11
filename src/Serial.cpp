@@ -15,6 +15,10 @@
 #define NUM_READS 1
 #endif
 
+#ifndef MAX_COUNTS
+#define MAX_COUNTS UINT32_MAX
+#endif
+
 /* important: cmds must be sorted by number of args, ascendingly */
 #define COMMANDS                                  \
   /* 0 Arguments */                               \

@@ -11,10 +11,6 @@
 
 #define CPU_FREQ_KHZ 8000
 
-#ifndef MAX_COUNTS
-#define MAX_COUNTS UINT32_MAX
-#endif
-
 #ifndef CHECK_INTERVAL_MULT
 #define CHECK_INTERVAL_MULT 1
 #endif
