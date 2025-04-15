@@ -13,6 +13,10 @@ class LoadCell {
   public:
   void begin(uint8_t dout_pin = 15, uint8_t sck_pin = 13);
   void save_state();
+  void save_max_counts(int32_t max_counts);
+  void save_max_counts_zero(int32_t max_counts_zero);
+  int32_t get_max_counts();
+  int32_t get_max_counts_zero();
 
   void tare();
   void zero(); /* call before placing calibration weight and setting slope */
@@ -24,6 +28,8 @@ class LoadCell {
   bool get_mode() const { return mode_; }
   bool get_offset() const { return offset_; }
   void toggle_mode() { mode_ = !mode_; }
+  int32_t max_counts = INIT_MAX_COUNTS;
+  int32_t max_counts_zero = INIT_MAX_COUNTS_ZERO;
 
   private:
   uint32_t offset_ = 0, slope_ = 1;

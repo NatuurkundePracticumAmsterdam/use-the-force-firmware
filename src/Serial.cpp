@@ -15,6 +15,14 @@
 #define NUM_READS 1
 #endif
 
+#ifndef INIT_MAX_COUNTS
+#define INIT_MAX_COUNTS INT32_MAX
+#endif
+
+#ifndef INIT_MAX_COUNTS_ZERO
+#define INIT_MAX_COUNTS_ZERO 0
+#endif
+
 #ifndef VERSION
 #define VERSION "-1.-1.-1"
 #endif
@@ -34,6 +42,8 @@
   X(TR)  /* tare load cell */                     \
   X(CL)  /* calibrate load cell */                \
   X(SC)  /* save loadcell config to flash */      \
+  X(CM)  /* set maximum force count */            \
+  X(CZ)  /* set maximum force count zero */       \
   X(VR)  /* get version */                        \
   X(SF)  /* set calib force */                    \
   /* 1 Argument */                                \
@@ -56,6 +66,7 @@ union arg {
 extern hw_timer_t *timer0;
 uint32_t timer0_isr_iter = 0;
 uint64_t timer_start_us = 0;
+int32_t val = 0;
 
 int8_t current_cmd;
 union arg current_args[2];
@@ -93,12 +104,12 @@ static void get_args(const std::string& cmd, std::vector<std::string>& vec) {
 }
 
 void poll_lc_active() {
-  int32_t val = lc.quick_read();
-  if (abs(val) > MAX_COUNTS) {
+  val = lc.quick_read();
+  if (abs(val-lc.max_counts_zero) > abs(lc.max_counts-lc.max_counts_zero)) {
     motor.abort();
     // Serial.println("[ERROR]: strain too high, stopping motor now");
   }
-  else if (returnRead) {
+  if (returnRead) {
     if (singleRead) {
       Serial.printf("[VALUE]: %d\n", val);
       singleRead = false;
@@ -230,6 +241,16 @@ void do_cmd(const std::string& cmd) {
     case SC:
       Serial.printf("[INFO]: writing load cell config to flash\n");
       lc.save_state();
+      break;
+    case CM:
+      lc.max_counts = abs(val);
+      lc.save_max_counts(abs(val));
+      Serial.printf("[INFO]: max counts set to %d\n", lc.max_counts);
+      break;
+    case CZ:
+      lc.max_counts_zero = val;
+      lc.save_max_counts_zero(val);
+      Serial.printf("[INFO]: max counts zero set to %d\n", lc.max_counts_zero);
       break;
     case VR:
       Serial.printf("[VERSION]: %s\n", VERSION);
