@@ -15,8 +15,8 @@
 #define NUM_READS 1
 #endif
 
-#ifndef MAX_COUNTS
-#define MAX_COUNTS UINT32_MAX
+#ifndef VERSION
+#define VERSION "-1.-1.-1"
 #endif
 
 /* important: cmds must be sorted by number of args, ascendingly */
@@ -34,6 +34,7 @@
   X(TR)  /* tare load cell */                     \
   X(CL)  /* calibrate load cell */                \
   X(SC)  /* save loadcell config to flash */      \
+  X(VR)  /* get version */                        \
   X(SF)  /* set calib force */                    \
   /* 1 Argument */                                \
   X(SP)  /* set pos in mm */                      \
@@ -229,6 +230,9 @@ void do_cmd(const std::string& cmd) {
     case SC:
       Serial.printf("[INFO]: writing load cell config to flash\n");
       lc.save_state();
+      break;
+    case VR:
+      Serial.printf("[VERSION]: %s\n", VERSION);
       break;
   }
   return;

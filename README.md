@@ -13,7 +13,7 @@ Any serial command follows the form:
 ```"#" <opcode> [argument[,argument]] ";"```. I.e.: a command begins with a ```#```, followed by a 2-character opcode from the list below, optionally followed by up to two comma-separated arguments, ending with a ```;```.
 
 ## List of valid opcodes:
-
+ - ```VR```: Get firmware version. Sends back ```[VERSION]: <VERSION>```
  - ```SP```: Set Position. Takes an integer in range [0, 47). 0 mm is the lowest position of the stage, 46 mm the highest. The stage must first be homed in order to set the position.
  - ```GP```: Get position. Takes no argument. Returns the current position in mm. If the current position is not known, UINT8_MAX, or 255, is returned.
  - ```SV```: Set Velocity. Takes an integer in range [1, 200]. Sets the stage velocity in mm/s.
