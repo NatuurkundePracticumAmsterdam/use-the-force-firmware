@@ -186,7 +186,7 @@ void do_cmd(const std::string& cmd) {
       break;
     case ST:
       motor.abort();
-      Serial.printf("[INFO]: stopping motor\n");
+      Serial.printf("[INFO]: stopping motor, needs to reHome\n");
       break;
     case SP:
       motor.set_pos_mm(current_args[0].i);
