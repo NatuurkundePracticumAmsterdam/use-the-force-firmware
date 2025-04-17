@@ -109,7 +109,7 @@ void poll_lc_active() {
     motor.abort();
     // Serial.println("[ERROR]: strain too high, stopping motor now");
   }
-  if (returnRead) {
+  else if (returnRead) {
     if (singleRead) {
       Serial.printf("[VALUE]: %d\n", val);
       singleRead = false;
