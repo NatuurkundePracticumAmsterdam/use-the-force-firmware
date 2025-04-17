@@ -28,29 +28,32 @@
 #endif
 
 /* important: cmds must be sorted by number of args, ascendingly */
-#define COMMANDS                                  \
-  /* 0 Arguments */                               \
-  X(AB)  /* abort continuous read */              \
-  X(ST)  /* stop motor */                         \
-  X(GP)  /* get pos in mm */                      \
-  X(GV)  /* get velocity in mm/s */               \
-  X(SR)  /* single read */                        \
-  X(ID)  /* get motor id */                       \
-  X(GM)  /* get read mode */                      \
-  X(TM)  /* toggle read mode */                   \
-  X(HM)  /* home stage */                         \
-  X(TR)  /* tare load cell */                     \
-  X(CL)  /* calibrate load cell */                \
-  X(SC)  /* save loadcell config to flash */      \
-  X(CM)  /* set maximum force count */            \
-  X(CZ)  /* set maximum force count zero */       \
-  X(VR)  /* get version */                        \
-  X(SF)  /* set calib force */                    \
-  /* 1 Argument */                                \
-  X(SP)  /* set pos in mm */                      \
-  X(SV)  /* set velocity in mm/s */               \
-  /* 2 Arguments */                               \
-  X(CR)  /* continuous read for n milliseconds */ \
+#define COMMANDS                                        \
+  /* 0 Arguments */                                     \
+  X(AB)  /* abort continuous read */                    \
+  X(ST)  /* stop motor */                               \
+  X(GP)  /* get pos in mm */                            \
+  X(GV)  /* get velocity in mm/s */                     \
+  X(SR)  /* single read */                              \
+  X(ID)  /* get motor id */                             \
+  X(HM)  /* home stage */                               \
+  X(CM)  /* Count Max, set maximum force count */       \
+  X(CZ)  /* Count Zero, set maximum force count zero */ \
+  X(VR)  /* get version */                              \
+                                                        \
+  X(GM)  /* DEPRICATED get read mode */                 \
+  X(TM)  /* DEPRICATED toggle read mode */              \
+  X(TR)  /* DEPRICATED tare load cell */                \
+  X(CL)  /* DEPRICATED calibrate load cell */           \
+  X(SC)  /* DEPRICATED save loadcell config to flash */ \
+                                                        \
+  /* 1 Argument */                                      \
+  X(SP)  /* set pos in mm */                            \
+  X(SF)  /* DEPRICATED set calib force */               \
+  X(SV)  /* set velocity in mm/s */                     \
+                                                        \
+  /* 2 Arguments */                                     \
+  X(CR)  /* continuous read for n milliseconds */       \
 
 enum commands {
   #define X(cmd) cmd,
@@ -78,7 +81,7 @@ extern Motor motor;
 extern LoadCell lc;
 
 static bool correct_num_args(uint8_t num_args) {
-  if (current_cmd < SF && num_args == 0)
+  if (current_cmd < SP && num_args == 0)
     return true;
   if (current_cmd < CR && num_args == 1)
     return true;
