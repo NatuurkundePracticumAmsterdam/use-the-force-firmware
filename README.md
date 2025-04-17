@@ -13,7 +13,7 @@ Any serial command follows the form:
 ```"#" <opcode> [argument[,argument]] ";"```. I.e.: a command begins with a ```#```, followed by a 2-character opcode from the list below, optionally followed by up to two comma-separated arguments, ending with a ```;```.
 
 ## List of valid opcodes:
-
+ - ```VR```: Get firmware version. Sends back ```[VERSION]: <VERSION>```
  - ```SP```: Set Position. Takes an integer in range [0, 47). 0 mm is the lowest position of the stage, 46 mm the highest. The stage must first be homed in order to set the position.
  - ```GP```: Get position. Takes no argument. Returns the current position in mm. If the current position is not known, UINT8_MAX, or 255, is returned.
  - ```SV```: Set Velocity. Takes an integer in range [1, 200]. Sets the stage velocity in mm/s.
@@ -29,6 +29,8 @@ Any serial command follows the form:
  - ```CL```: Calibrate. Takes no argument. Starts the load cell calibration sequence. Tares the load cell and sets its slope to 1. After calling this command, the caller should apply a known calibration force to the cell, and provide that value as an argument to the below command.
  - ```SF```: Set calibration Force. Takes a float. Calibrates the load cell based on the load cell's current reading and the provided argument. It is the callers responsibility to call ```CL``` beforehand. Calibration is unit-agnostic, and based solely on the argument's unit.
  - ```SC```: Save Configuration. Takes no argument. Writes the current calibration settings to flash memory, so they persist between reboots.
+ - ```CZ```: Set Counts Zero (for maximum counts). This point will be seen as a zero, as the load cell seems to give a value based on what side is up. Make sure to keep the load cell with the same direction facing up, as values between which side is up may differ a lot.
+ - ```CM```: Set Counts Maximum. A way to set the abort limit by hanging the maximum allowed load on the load cell. The order of ```CZ``` and ```CM``` is not important, but it is recommended to do both.
 
 *A note on calibration*: While the use of two separate commands may seem tedious, it is necessary for accurate calibration. This is due to the fact that the load cell must be zeroed **before** any calibrating force is applied.
 

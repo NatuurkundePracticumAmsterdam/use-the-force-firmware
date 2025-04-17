@@ -1,5 +1,6 @@
 #include "LoadCell.h"
 #include "Motor.h"
+#include "Poll.h"
 
 #include "esp32-hal-timer.h"
 #include "HardwareSerial.h"
@@ -14,27 +15,45 @@
 #define NUM_READS 1
 #endif
 
+#ifndef INIT_MAX_COUNTS
+#define INIT_MAX_COUNTS INT32_MAX
+#endif
+
+#ifndef INIT_MAX_COUNTS_ZERO
+#define INIT_MAX_COUNTS_ZERO 0
+#endif
+
+#ifndef VERSION
+#define VERSION "-1.-1.-1"
+#endif
+
 /* important: cmds must be sorted by number of args, ascendingly */
-#define COMMANDS                                  \
-  /* 0 Arguments */                               \
-  X(AB)  /* abort continuous read */              \
-  X(ST)  /* stop motor */                         \
-  X(GP)  /* get pos in mm */                      \
-  X(GV)  /* get velocity in mm/s */               \
-  X(SR)  /* single read */                        \
-  X(ID)  /* get motor id */                       \
-  X(GM)  /* get read mode */                      \
-  X(TM)  /* toggle read mode */                   \
-  X(HM)  /* home stage */                         \
-  X(TR)  /* tare load cell */                     \
-  X(CL)  /* calibrate load cell */                \
-  X(SC)  /* save loadcell config to flash */      \
-  X(SF)  /* set calib force */                    \
-  /* 1 Argument */                                \
-  X(SP)  /* set pos in mm */                      \
-  X(SV)  /* set velocity in mm/s */               \
-  /* 2 Arguments */                               \
-  X(CR)  /* continuous read for n milliseconds */ \
+#define COMMANDS                                        \
+  /* 0 Arguments */                                     \
+  X(AB)  /* abort continuous read */                    \
+  X(ST)  /* stop motor */                               \
+  X(GP)  /* get pos in mm */                            \
+  X(GV)  /* get velocity in mm/s */                     \
+  X(SR)  /* single read */                              \
+  X(ID)  /* get motor id */                             \
+  X(HM)  /* home stage */                               \
+  X(CM)  /* Count Max, set maximum force count */       \
+  X(CZ)  /* Count Zero, set maximum force count zero */ \
+  X(VR)  /* get version */                              \
+                                                        \
+  X(GM)  /* DEPRICATED get read mode */                 \
+  X(TM)  /* DEPRICATED toggle read mode */              \
+  X(TR)  /* DEPRICATED tare load cell */                \
+  X(CL)  /* DEPRICATED calibrate load cell */           \
+  X(SC)  /* DEPRICATED save loadcell config to flash */ \
+                                                        \
+  /* 1 Argument */                                      \
+  X(SP)  /* set pos in mm */                            \
+  X(SF)  /* DEPRICATED set calib force */               \
+  X(SV)  /* set velocity in mm/s */                     \
+                                                        \
+  /* 2 Arguments */                                     \
+  X(CR)  /* continuous read for n milliseconds */       \
 
 enum commands {
   #define X(cmd) cmd,
@@ -50,15 +69,19 @@ union arg {
 extern hw_timer_t *timer0;
 uint32_t timer0_isr_iter = 0;
 uint64_t timer_start_us = 0;
+int32_t val = 0;
 
 int8_t current_cmd;
 union arg current_args[2];
+
+bool returnRead = false;
+bool singleRead = false;
 
 extern Motor motor;
 extern LoadCell lc;
 
 static bool correct_num_args(uint8_t num_args) {
-  if (current_cmd < SF && num_args == 0)
+  if (current_cmd < SP && num_args == 0)
     return true;
   if (current_cmd < CR && num_args == 1)
     return true;
@@ -80,6 +103,25 @@ static void get_args(const std::string& cmd, std::vector<std::string>& vec) {
       if (c != args.end())
         begin = c + 1;
     }
+  }
+}
+
+void poll_lc_active() {
+  val = lc.quick_read();
+  if (abs(val-lc.max_counts_zero) > abs(lc.max_counts-lc.max_counts_zero)) {
+    motor.abort();
+    // Serial.println("[ERROR]: strain too high, stopping motor now");
+  }
+  else if (returnRead) {
+    if (singleRead) {
+      Serial.printf("[VALUE]: %d\n", val);
+      singleRead = false;
+    }
+    else {
+      uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
+      Serial.printf("[TIME;VALUE]: %u;%d\n", timediff_ms, val);
+    }
+    returnRead = false;
   }
 }
 
@@ -127,9 +169,7 @@ static void parse_cmd(const std::string& cmd) {
 }
 
 void IRAM_ATTR timer0_isr() {
-  double val = lc.read(NUM_READS);
-  uint32_t timediff_ms = (esp_timer_get_time() - timer_start_us) / 1000;
-  Serial.printf("[TIME;VALUE]: %u;%f\n", timediff_ms, val);
+  returnRead = true;
 
   timer0_isr_iter--;
   if (timer0_isr_iter <= 0) {
@@ -149,7 +189,7 @@ void do_cmd(const std::string& cmd) {
       break;
     case ST:
       motor.abort();
-      Serial.printf("[INFO]: stopping motor\n");
+      Serial.printf("[INFO]: stopping motor, needs to reHome\n");
       break;
     case SP:
       motor.set_pos_mm(current_args[0].i);
@@ -177,7 +217,8 @@ void do_cmd(const std::string& cmd) {
       lc.toggle_mode();
       break;
     case SR:
-      Serial.printf("[VALUE]: %f\n", lc.read());
+      returnRead = true;
+      singleRead = true;
       break;
     case CR:
       timer0_isr_iter = current_args[0].i;
@@ -186,6 +227,7 @@ void do_cmd(const std::string& cmd) {
       timerAlarmWrite(timer0, std::round(current_args[1].i * 10), true);
       timerAlarmEnable(timer0);
       timerStart(timer0);
+      returnRead = true;
       break;
     case TR:
       Serial.printf("[INFO]: tare loadcell\n");
@@ -202,6 +244,19 @@ void do_cmd(const std::string& cmd) {
     case SC:
       Serial.printf("[INFO]: writing load cell config to flash\n");
       lc.save_state();
+      break;
+    case CM:
+      lc.max_counts = abs(val);
+      lc.save_max_counts(abs(val));
+      Serial.printf("[INFO]: max counts set to %d\n", lc.max_counts);
+      break;
+    case CZ:
+      lc.max_counts_zero = val;
+      lc.save_max_counts_zero(val);
+      Serial.printf("[INFO]: max counts zero set to %d\n", lc.max_counts_zero);
+      break;
+    case VR:
+      Serial.printf("[VERSION]: %s\n", VERSION);
       break;
   }
   return;
