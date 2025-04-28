@@ -1,6 +1,9 @@
 # UvA-VU Z-Stage
 This repository contains firmware for setups using a load cell+HX711 with an M5Push6060 and M5DinMeter (or any other esp32-based board).
 The firmware exposes a serial interface at a baud rate of 115200, through which all communication is achieved.
+
+On the M5DinMeter, port A is used for the M5Push6060 (RS485 Unit) and port B is used for the M5 Weight Unit.
+
 Serial output is prefixed with a label, to allow for client-side filtering. Below is a short description of all labels.
 - ```[INFO]: ```: Informative message. Safe to ignore but useful for debugging.
 - ```[ERROR]: ```: An error occurred while processing the command.

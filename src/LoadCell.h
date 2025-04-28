@@ -11,7 +11,7 @@
 
 class LoadCell {
   public:
-  void begin(uint8_t dout_pin = 15, uint8_t sck_pin = 13);
+  void begin(uint8_t dout_pin = 1, uint8_t sck_pin = 2);
   void save_state();
   void save_max_counts(int32_t max_counts);
   void save_max_counts_zero(int32_t max_counts_zero);
