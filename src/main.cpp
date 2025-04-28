@@ -1,13 +1,15 @@
-#include "LoadCell.h"
-#include "Motor.h"
-#include "Poll.h"
+#include <algorithm>
+#include <string>
+#include <stdint.h>
 
 #include "HardwareSerial.h"
 #include <Arduino.h>
 #include "esp32-hal-timer.h"
 
-#include <string>
-#include <stdint.h>
+#include "LoadCell.h"
+#include "Motor.h"
+#include "Poll.h"
+#include "gui.h"
 
 #define CPU_FREQ_KHZ 8000
 
@@ -57,6 +59,7 @@ void setup() {
 void loop() {
   if (Serial.available()) {
     std::string cmd = Serial.readString().c_str();
+    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
     do_cmd(cmd);
   }
   if (should_poll)
