@@ -6,12 +6,12 @@ The firmware exposes a serial interface at a default baud rate of 115200, throug
 On the M5DinMeter, port A is used for the M5Push6060 (RS485 Unit) and port B is used for the M5 Weight Unit. (Ports names can be found on stickers on the side)
 
 Serial output is prefixed with a label, to allow for client-side filtering. Below is a short description of all labels.
-- ```[INFO]: ```: Informative message. Safe to ignore but useful for debugging.
-- ```[ERROR]: ```: An error occurred while processing the command.
-- ```[VALUE]: ```: A value read from the load cell.
-- ```[TIME;VALUE]: ```: A value read from the load cell, accompanied by a timestamp denoting the number of ms since the first read related to this one.
-- ```[VEL]: ```: Motor velocity in $\frac1{60}$ mm/s.
-- ```[POS]: ```: Motor position in mm.
+- ```[INFO]:```: Informative message. Safe to ignore but useful for debugging.
+- ```[ERROR]:```: An error occurred while processing the command.
+- ```[VALUE]:```: A value read from the load cell.
+- ```[TIME;VALUE]:```: A value read from the load cell, accompanied by a timestamp denoting the number of ms since the first read related to this one.
+- ```[VEL]:```: Motor velocity in $\frac1{60}$ mm/s.
+- ```[POS]:```: Motor position in mm.
 
 Any serial command follows the form: 
 ```"#" <opcode> [argument[,argument]] ";"```. I.e.: a command begins with a ```#```, followed by a 2-character opcode from the list below, optionally followed by up to two comma-separated arguments, ending with a ```;```.
