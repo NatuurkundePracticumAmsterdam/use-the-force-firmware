@@ -36,17 +36,17 @@
   X(GP)  /* get pos in mm */                            \
   X(GV)  /* get velocity in mm/s */                     \
   X(SR)  /* single read */                              \
-  X(ID)  /* get motor id */                             \
-  X(HM)  /* home stage */                               \
-  X(CM)  /* Count Max, set maximum force count */       \
-  X(CZ)  /* Count Zero, set maximum force count zero */ \
-  X(VR)  /* get version */                              \
   X(TR)  /* tare force value */                         \
+  X(HM)  /* home stage */                               \
+  X(CZ)  /* Count Zero, set maximum force count zero */ \
+  X(CM)  /* Count Max, set maximum force count */       \
+  X(VR)  /* get version */                              \
+  X(ID)  /* get motor id */                             \
                                                         \
   /* 1 Argument */                                      \
   X(SP)  /* set pos in mm */                            \
-  X(SF)  /* set calib force */                          \
   X(SV)  /* set velocity in mm/s */                     \
+  X(SF)  /* set calib force */                          \
   X(UX)  /* update interface x offset */                \
   X(UY)  /* update interface y offset */                \
   X(UL)  /* update interface y line spacing */          \
