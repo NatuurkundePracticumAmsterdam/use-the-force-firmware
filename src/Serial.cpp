@@ -1,6 +1,7 @@
 #include "LoadCell.h"
 #include "Motor.h"
 #include "Poll.h"
+#include "interface.h"
 
 #include "esp32-hal-timer.h"
 #include "HardwareSerial.h"
@@ -40,17 +41,16 @@
   X(CM)  /* Count Max, set maximum force count */       \
   X(CZ)  /* Count Zero, set maximum force count zero */ \
   X(VR)  /* get version */                              \
-                                                        \
-  X(GM)  /* DEPRICATED get read mode */                 \
-  X(TM)  /* DEPRICATED toggle read mode */              \
-  X(TR)  /* DEPRICATED tare load cell */                \
-  X(CL)  /* DEPRICATED calibrate load cell */           \
-  X(SC)  /* DEPRICATED save loadcell config to flash */ \
+  X(TR)  /* tare force value */                         \
                                                         \
   /* 1 Argument */                                      \
   X(SP)  /* set pos in mm */                            \
-  X(SF)  /* DEPRICATED set calib force */               \
+  X(SF)  /* set calib force */                          \
   X(SV)  /* set velocity in mm/s */                     \
+  X(UX)  /* update interface x offset */                \
+  X(UY)  /* update interface y offset */                \
+  X(UL)  /* update interface y line spacing */          \
+  X(UU)  /* update unit */                              \
                                                         \
   /* 2 Arguments */                                     \
   X(CR)  /* continuous read for n milliseconds */       \
@@ -64,6 +64,7 @@ enum commands {
 union arg {
   int32_t i;
   float f;
+  char s[10]; // Added to store strings (adjust size as needed)
 };
 
 extern hw_timer_t *timer0;
@@ -79,6 +80,7 @@ bool singleRead = false;
 
 extern Motor motor;
 extern LoadCell lc;
+extern Interface interface;
 
 static bool correct_num_args(uint8_t num_args) {
   if (current_cmd < SP && num_args == 0)
@@ -123,6 +125,7 @@ void poll_lc_active() {
     }
     returnRead = false;
   }
+  interface.force = val;
 }
 
 static void parse_cmd(const std::string& cmd) {
@@ -157,6 +160,15 @@ static void parse_cmd(const std::string& cmd) {
       case SF:
         current_args[0].f = atof(args[0].c_str());
         break;
+      case UU:
+        if (args[0].length() >= sizeof(current_args[0].s)) {
+          Serial.println("[ERROR]: Unit string too long");
+          current_cmd = -1;
+          return;
+        }
+        strncpy(current_args[0].s, args[0].c_str(), sizeof(current_args[0].s) - 1);
+        current_args[0].s[sizeof(current_args[0].s) - 1] = '\0';
+        break;
       case CR:
         current_args[1].i = atoi(args[1].c_str());
       default:
@@ -183,6 +195,7 @@ void do_cmd(const std::string& cmd) {
     Serial.println("[ERROR]: invalid command");
     return;
   }
+  interface.show_command(cmd);
   switch (current_cmd) {
     case AB:
       timer0_isr_iter = 0;
@@ -209,13 +222,6 @@ void do_cmd(const std::string& cmd) {
       motor.home();
       Serial.printf("[INFO]: homing\n");
       break;
-    case GM:
-      Serial.printf("[INFO]: current mode is %s\n", lc.get_mode() ? "cal" : "raw");
-      break;
-    case TM:
-      Serial.printf("[INFO]: toggling mode\n");
-      lc.toggle_mode();
-      break;
     case SR:
       returnRead = true;
       singleRead = true;
@@ -230,20 +236,12 @@ void do_cmd(const std::string& cmd) {
       returnRead = true;
       break;
     case TR:
-      Serial.printf("[INFO]: tare loadcell\n");
-      lc.tare();
-      break;
-    case CL:
-      Serial.printf("[INFO]: ready for calibration\n");
-      lc.zero();
+      Serial.printf("[INFO]: taring force\n");
+      interface.update_force_zero();
       break;
     case SF:
-      Serial.printf("[INFO]: calibrating loadcell with value: %f\n", current_args[0].f);
-      lc.set_slope(current_args[0].f);
-      break;
-    case SC:
-      Serial.printf("[INFO]: writing load cell config to flash\n");
-      lc.save_state();
+      Serial.printf("[INFO]: calibrating force with value: %f\n", current_args[0].f);
+      interface.update_force_slope(current_args[0].f);
       break;
     case CM:
       lc.max_counts = abs(val);
@@ -257,6 +255,22 @@ void do_cmd(const std::string& cmd) {
       break;
     case VR:
       Serial.printf("[VERSION]: %s\n", VERSION);
+      break;
+    case UX:
+      interface.update_x_offset(current_args[0].i);
+      Serial.printf("[INFO]: updated x offset to %d\n", current_args[0].i);
+      break;
+    case UY:
+      interface.update_y_offset(current_args[0].i);
+      Serial.printf("[INFO]: updated y offset to %d\n", current_args[0].i);
+      break;
+    case UL:
+      interface.update_line_height(current_args[0].i);
+      Serial.printf("[INFO]: updated line y offset to %d\n", current_args[0].i);
+      break;
+    case UU:
+      interface.update_unit(std::string(current_args[0].s));
+      Serial.printf("[INFO]: updated unit to %s\n", current_args[0].s);
       break;
   }
   return;

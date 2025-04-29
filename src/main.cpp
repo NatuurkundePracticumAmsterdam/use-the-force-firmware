@@ -9,7 +9,7 @@
 #include "LoadCell.h"
 #include "Motor.h"
 #include "Poll.h"
-#include "gui.h"
+#include "interface.h"
 
 #define CPU_FREQ_KHZ 8000
 
@@ -25,10 +25,16 @@
 #define LOOP_DELAY 50
 #endif
 
+#ifndef INTERFACE_LOOP_INTERVAL
+#define INTERFACE_LOOP_INTERVAL 5
+#endif
+
 Motor motor;
 LoadCell lc;
+Interface interface;
 hw_timer_t *timer0 = NULL, *timer1 = NULL;
 bool should_poll = false;
+uint8_t interface_update_interval = INTERFACE_LOOP_INTERVAL;
 
 /* from serial */
 void do_cmd(const std::string& cmd);
@@ -42,6 +48,7 @@ static void poll_lc() {
 }
 
 void setup() {
+  interface.setup();
   Serial.setTimeout(SERIAL_TIMEOUT); // 20ms timeout for serial read
   Serial.begin(115200);
   motor.begin();
@@ -54,15 +61,25 @@ void setup() {
   timerAttachInterrupt(timer1, &timer1_isr, true);
   timerAlarmWrite(timer1, 100*10, true);
   timerAlarmEnable(timer1);
+  poll_lc();
+  delay(500);
+  interface.update_force_zero();
+  interface.clear();
 }
 
 void loop() {
   if (Serial.available()) {
     std::string cmd = Serial.readString().c_str();
-    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
+    std::transform(cmd.begin()+1, cmd.begin()+3, cmd.begin()+1, ::toupper);
     do_cmd(cmd);
   }
   if (should_poll)
     poll_lc();
+  interface_update_interval--;
+  if (interface_update_interval == 0) {
+    interface_update_interval = INTERFACE_LOOP_INTERVAL;
+    interface.loop();
+  }
+  
   delay(LOOP_DELAY);
 }
