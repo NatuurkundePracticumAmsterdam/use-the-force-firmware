@@ -67,6 +67,10 @@
 #define TFT_BUSY -1
 #endif
 
+#ifndef TFT_BACKLIGHT_ON
+#define TFT_BACKLIGHT_ON 1
+#endif
+
 class Interface {
 public:
     void setup();
@@ -85,6 +89,8 @@ public:
     int32_t force;
 
 private:
+    void wake_display();
+
     char current_force[14] = "-0000000000\0";
     char corrected_force_char[22] = "";
     char last_command[32] = "";
@@ -101,6 +107,15 @@ private:
     uint64_t masked_force_slope;
     
     bool command_used = false;
+
+    int backgroundClr = 0x0000; // Hexadecimal RGB565
+    int textClr = 0xFFFF; // Hexadecimal RGB565
+    // 16 bit RGB565 color format, Examples:
+    // 0x0000 = Black
+    // 0x001F = Blue
+    // 0x07E0 = Green
+    // 0xF800 = Red
+    // 0xFFFF = White
 };
 
 #endif // INTERFACE_H

@@ -42,6 +42,7 @@
   X(CM)  /* Count Max, set maximum force count */       \
   X(VR)  /* get version */                              \
   X(ID)  /* get motor id */                             \
+  X(SD)  /* Serial Dump, sends what is in serial rn*/   \
                                                         \
   /* 1 Argument */                                      \
   X(SP)  /* set pos in mm */                            \
@@ -271,6 +272,9 @@ void do_cmd(const std::string& cmd) {
     case UU:
       interface.update_unit(std::string(current_args[0].s));
       Serial.printf("[INFO]: updated unit to %s\n", current_args[0].s);
+      break;
+    case SD:
+      Serial.printf("\n");
       break;
   }
   return;

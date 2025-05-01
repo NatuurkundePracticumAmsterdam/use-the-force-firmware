@@ -9,8 +9,8 @@ TFT_eSPI tft = TFT_eSPI();
 void Interface::setup() {
   tft.init();
   tft.setRotation(3); // Adjust rotation if needed
-  tft.fillScreen(TFT_WHITE);
-  tft.setTextColor(TFT_BLACK, TFT_WHITE);
+  tft.fillScreen(backgroundClr);
+  tft.setTextColor(textClr, backgroundClr);
   
   tft.setTextFont(FONT_TYPE);
   pinMode(TFT_BL, OUTPUT);
@@ -29,7 +29,7 @@ void Interface::setup() {
 }
 
 void Interface::clear(){
-  tft.fillScreen(TFT_WHITE);
+  tft.fillScreen(backgroundClr);
 }
 
 void Interface::update_force_display() {
@@ -78,7 +78,7 @@ void Interface::show_command(const std::string& command) {
   command_display_time = millis();
   command_used = true;
 
-  tft.fillScreen(TFT_WHITE);
+  tft.fillScreen(backgroundClr);
   tft.setCursor(x_offset, y_offset);
   tft.printf("Command:");
   tft.setCursor(x_offset, y_offset + line_height);
@@ -87,7 +87,7 @@ void Interface::show_command(const std::string& command) {
 
 void Interface::loop() {
   if (command_used && (millis() - command_display_time > COMMAND_DISPLAY_DURATION)) {
-    tft.fillRect(x_offset, y_offset, TFT_WIDTH, line_height * 2, TFT_WHITE);
+    tft.fillRect(x_offset, y_offset, TFT_WIDTH, line_height * 2, backgroundClr);
     command_used = false;
   }
   if (!command_used) {
