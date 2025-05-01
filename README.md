@@ -43,6 +43,8 @@ Any serial command follows the form:
 ---
 
 ### 1 Argument
+Add an argument after the opcode, either with or without space. Make sure to end with ```;``` AFTER the argument.
+
  - ```SP```: Set Position. Takes an integer in range [0, 47). 0 mm is the lowest position of the stage, 46 mm the highest. The stage must first be homed in order to set the position.
  
  - ```SV```: Set Velocity. Takes an integer in range [1, 200]. Sets the stage velocity in $\frac1{60}$ mm/s.
@@ -59,6 +61,8 @@ Any serial command follows the form:
 ---
 
 ### 2 Arguments
+Add multiple arguments by seperating them with a ```,``` and ending with ```;``` AFTER the arguments.
+
  - ```CR```: Continuous Read. Takes two integers in range [1, INT_MAX or 2147483647]. The first argument represents the number of reads to perform. The second argument represents the milliseconds in between reads. 
 ---
 
