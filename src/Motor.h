@@ -24,8 +24,8 @@ private:
   uint8_t vel_mms_ = 100;
   uint8_t pos_mm_ = -1;
 
-  const uint8_t pin_rx_ = 1;
-  const uint8_t pin_tx_ = 2;
+  const uint8_t pin_rx_ = 15;
+  const uint8_t pin_tx_ = 13;
 };
 
 #endif // !MOTOR_H
