@@ -8,7 +8,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 void Interface::setup() {
   tft.init();
-  tft.setRotation(3); // Adjust rotation if needed
+  tft.setRotation(3);
   tft.fillScreen(backgroundClr);
   tft.setTextColor(textClr, backgroundClr);
   
@@ -17,12 +17,31 @@ void Interface::setup() {
   digitalWrite(TFT_BL, HIGH);
 
   auto handle = nvs_util::get_handle();
+
+  //Load saved force_slope
   if (nvs_util::read("force_slope", masked_force_slope, handle.get())) {
     memcpy(&force_slope, &masked_force_slope, sizeof(force_slope));
   }
+
+  // Load saved force_zero
   if (nvs_util::read("force_zero", masked_force_zero, handle.get())) {
     memcpy(&force_zero, &masked_force_zero, sizeof(force_zero));
   }
+  
+  // Load saved unit
+  for (int i = 0; i < INTERFACE_MAX_UNIT_LENGTH; i++) {
+    char key[INTERFACE_MAX_UNIT_LENGTH-1];
+    snprintf(key, sizeof(key), "unit_%d", i);
+    if (nvs_util::read(key, masked_unit[i], handle.get())) {
+      if (masked_unit[i] != INTERFACE_UNIT_PADDING) {
+        unit += static_cast<char>(masked_unit[i]);
+      }
+    }
+  }
+  if (unit.length()==0) {
+    unit = " mN";
+  }
+
   tft.setTextSize(4);
   tft.setCursor(x_offset+60, y_offset);
   tft.printf("o/");
@@ -52,8 +71,8 @@ void Interface::update_force_display() {
   }
 
   // Ensure unit is appended or replaces the last part if no room
-  if (corrected_force.length() + unit.length() > sizeof(corrected_force_char) - 9) {
-    corrected_force = corrected_force.substr(0, sizeof(corrected_force_char) - 9 - unit.length());
+  if (corrected_force.length() + unit.length() > sizeof(corrected_force_char) - 6) {  // Changed from 9 to 6 to guarantee space for -9999
+    corrected_force = corrected_force.substr(0, sizeof(corrected_force_char) - 6 - unit.length());
   }
   corrected_force += unit;
 
@@ -110,7 +129,25 @@ void Interface::update_line_height(const int16_t height) {
 }
 
 void Interface::update_unit(const std::string& new_unit) {
-  unit = new_unit;
+  // Truncate unit if too long
+  unit = new_unit.substr(0, INTERFACE_MAX_UNIT_LENGTH);
+  
+  // Get NVS handle
+  auto handle = nvs_util::get_handle();
+  
+  // Store each character, pad with spaces
+  for (int i = 0; i < INTERFACE_MAX_UNIT_LENGTH; i++) {
+    char key[INTERFACE_MAX_UNIT_LENGTH-1];
+    snprintf(key, sizeof(key), "unit_%d", i);
+    
+    if (i < unit.length()) {
+      masked_unit[i] = static_cast<uint8_t>(unit[i]);
+    } else {
+      masked_unit[i] = INTERFACE_UNIT_PADDING;
+    }
+    
+    nvs_util::write(key, masked_unit[i], handle.get());
+  }
 }
 
 void Interface::update_force_zero() {
