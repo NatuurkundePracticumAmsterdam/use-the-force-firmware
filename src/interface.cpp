@@ -126,5 +126,5 @@ void Interface::update_force_slope(const float actual) {
   memcpy(&masked_force_slope, &force_slope, sizeof(force_slope));
   auto handle = nvs_util::get_handle();
   nvs_util::write("force_slope", masked_force_slope, handle.get());
+  Serial.printf("[INFO]: calibrated force slope to: %f\n", force_slope);
 }
-

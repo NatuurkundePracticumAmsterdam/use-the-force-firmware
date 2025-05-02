@@ -92,7 +92,7 @@ public:
     void save_force_slope();
     void clear();
 
-    uint32_t interface_update_interval = INTERFACE_READ_LOOPS;
+    uint32_t interface_update_interval = INTERFACE_READ_LOOPS-1;
     std::vector<int32_t> forceVec = std::vector<int32_t>(INTERFACE_READ_LOOPS, 0);
 
 private:

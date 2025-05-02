@@ -70,9 +70,11 @@ void loop() {
   }
   if (should_poll)
     poll_lc();
+
     interface.interface_update_interval--;
+
     if (interface.interface_update_interval == 0) {
-      interface.interface_update_interval = INTERFACE_READ_LOOPS;
+      interface.interface_update_interval = INTERFACE_READ_LOOPS-1;
       interface.loop();
   }
   

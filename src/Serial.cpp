@@ -241,7 +241,6 @@ void do_cmd(const std::string& cmd) {
       interface.update_force_zero();
       break;
     case SF:
-      Serial.printf("[INFO]: calibrating force with value: %f\n", current_args[0].f);
       interface.update_force_slope(current_args[0].f);
       break;
     case CM:
