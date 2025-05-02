@@ -94,11 +94,13 @@ Delay after each "loop" (in ms). A loop consists of the following actions:
 #### `DSERIAL_TIMEOUT`
 When a command, or any other message, is send over the serial port, the device will wait an amount of milliseconds from when the first bit arrives. A value too low will not read full commands. Rule of thumb: minimum $\frac{\text{max bits}}{\text{baudrate}}$ ms
 
-#### `DINTERFACE_LOOP_INTERVAL`
-Amount of loops that has to pass.
+#### `DINTERFACE_READ_LOOPS`
+Amount of loops that has to pass per update of the interface. The naming is due to the amount of reads that gets averaged over the duration. Tough the size limit is set at `uint32_t`, it must be kept in mind that a vector of the same size will be set. This vector contains values of `int32_t` and a vector that is too big will take up too much memory.
 
 #### `DNUM_READS`
 Amount of times the load cell gets polled per reading.
+
+This significantly slows down the reading and is not recommended to be changed. Use software on other devices to generate averages.
 
 #### `DCHECK_INTERVAL_MULT`
 Multiplier for how often the load cell has to be polled.

@@ -2,6 +2,8 @@
 #define INTERFACE_H
 
 #include <string>
+#include <vector>
+#include <numeric>
 
 #ifndef INTERFACE_X_OFFSET
 #define INTERFACE_X_OFFSET 0
@@ -67,6 +69,10 @@
 #define TFT_BUSY -1
 #endif
 
+#ifndef INTERFACE_READ_LOOPS
+#define INTERFACE_READ_LOOPS 5
+#endif
+
 #ifndef TFT_BACKLIGHT_ON
 #define TFT_BACKLIGHT_ON 1
 #endif
@@ -86,7 +92,8 @@ public:
     void save_force_slope();
     void clear();
 
-    int32_t force;
+    uint32_t interface_update_interval = INTERFACE_READ_LOOPS;
+    std::vector<int32_t> forceVec = std::vector<int32_t>(INTERFACE_READ_LOOPS, 0);
 
 private:
     void wake_display();
@@ -100,6 +107,7 @@ private:
     int16_t y_offset = INTERFACE_Y_OFFSET;
     int16_t line_height = INTERFACE_LINE_HEIGHT;
 
+    int32_t avgForce;
     int32_t force_zero = 0;
     double force_slope = 1.0f;
     std::string unit = " mN";

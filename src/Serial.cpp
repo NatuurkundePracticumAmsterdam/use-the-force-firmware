@@ -126,7 +126,7 @@ void poll_lc_active() {
     }
     returnRead = false;
   }
-  interface.force = val;
+  interface.forceVec[interface.interface_update_interval] = val;
 }
 
 static void parse_cmd(const std::string& cmd) {

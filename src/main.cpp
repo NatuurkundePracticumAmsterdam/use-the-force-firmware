@@ -25,16 +25,11 @@
 #define LOOP_DELAY 50
 #endif
 
-#ifndef INTERFACE_LOOP_INTERVAL
-#define INTERFACE_LOOP_INTERVAL 5
-#endif
-
 Motor motor;
 LoadCell lc;
 Interface interface;
 hw_timer_t *timer0 = NULL, *timer1 = NULL;
 bool should_poll = false;
-uint8_t interface_update_interval = INTERFACE_LOOP_INTERVAL;
 
 /* from serial */
 void do_cmd(const std::string& cmd);
@@ -75,9 +70,9 @@ void loop() {
   }
   if (should_poll)
     poll_lc();
-  interface_update_interval--;
-  if (interface_update_interval == 0) {
-    interface_update_interval = INTERFACE_LOOP_INTERVAL;
+  interface.interface_update_interval--;
+  if (interface.interface_update_interval == 0) {
+    interface.interface_update_interval = INTERFACE_READ_LOOPS;
     interface.loop();
   }
   

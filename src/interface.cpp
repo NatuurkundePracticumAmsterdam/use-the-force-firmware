@@ -33,14 +33,15 @@ void Interface::clear(){
 }
 
 void Interface::update_force_display() {
-  std::string force_str = std::to_string(force);
+  avgForce = static_cast<int32_t>(std::round(std::accumulate(forceVec.begin(), forceVec.end(), 0.0) / INTERFACE_READ_LOOPS));
+  std::string force_str = std::to_string(avgForce);
   if (force_str.length() < sizeof(current_force)) {
     force_str.append(sizeof(current_force) - force_str.length(), ' ');
   }
   strncpy(current_force, force_str.c_str(), sizeof(current_force) - 1);
   current_force[sizeof(current_force) - 1] = '\0'; // Ensure null termination
 
-  float corrected_force_value = (force - force_zero) * force_slope;
+  float corrected_force_value = (avgForce - force_zero) * force_slope;
   std::string corrected_force = std::to_string(corrected_force_value);
 
   // Remove trailing zeros after the decimal point
@@ -112,11 +113,11 @@ void Interface::update_unit(const std::string& new_unit) {
 }
 
 void Interface::update_force_zero() {
-  force_zero = force;
+  force_zero = avgForce;
 }
 
 void Interface::update_force_slope(const float actual) {
-  int32_t value = force - force_zero;
+  int32_t value = avgForce - force_zero;
   if (value == 0) {
     force_slope = 1.0f;
     return;
