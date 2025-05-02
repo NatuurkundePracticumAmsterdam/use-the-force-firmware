@@ -73,6 +73,14 @@
 #define INTERFACE_READ_LOOPS 5
 #endif
 
+#ifndef INTERFACE_MAX_UNIT_LENGTH 
+#define INTERFACE_MAX_UNIT_LENGTH 17
+#endif
+
+#ifndef INTERFACE_UNIT_PADDING
+#define INTERFACE_UNIT_PADDING 0xFF
+#endif
+
 #ifndef TFT_BACKLIGHT_ON
 #define TFT_BACKLIGHT_ON 1
 #endif
@@ -89,10 +97,10 @@ public:
     void update_unit(const std::string& new_unit);
     void update_force_zero();
     void update_force_slope(const float actual);
-    void save_force_slope();
+    void save_force_zero();
     void clear();
 
-    uint32_t interface_update_interval = INTERFACE_READ_LOOPS;
+    uint32_t interface_update_interval = INTERFACE_READ_LOOPS-1;
     std::vector<int32_t> forceVec = std::vector<int32_t>(INTERFACE_READ_LOOPS, 0);
 
 private:
@@ -110,9 +118,11 @@ private:
     int32_t avgForce;
     int32_t force_zero = 0;
     double force_slope = 1.0f;
-    std::string unit = " mN";
+    std::string unit;
 
     uint64_t masked_force_slope;
+    uint32_t masked_force_zero;
+    uint8_t masked_unit[INTERFACE_MAX_UNIT_LENGTH];
     
     bool command_used = false;
 

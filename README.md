@@ -29,7 +29,7 @@ Any serial command follows the form:
 
  - ```SR```: Single Read. Returns the load cell's read value.
 
- - ```TR```: Tare. Takes no argument. Sets the load cell's current reading as its offset, effectively zeroing it. Only works for interface.
+ - ```TR```: Tare. Takes no argument. Sets the load cell's current reading as its offset, effectively zeroing it. Only works for interface. Gets saved in memory and used on startup.
 
   - ```HM```: Home. Takes no argument. Homes the stage. This is done by translating downwards until the stop is hit, and then translating upwards 1 mm.
 
