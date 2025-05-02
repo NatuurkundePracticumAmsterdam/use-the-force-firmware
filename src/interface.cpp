@@ -19,8 +19,9 @@ void Interface::setup() {
   auto handle = nvs_util::get_handle();
   if (nvs_util::read("force_slope", masked_force_slope, handle.get())) {
     memcpy(&force_slope, &masked_force_slope, sizeof(force_slope));
-  } else {
-    force_slope = 1.0f;
+  }
+  if (nvs_util::read("force_zero", masked_force_zero, handle.get())) {
+    memcpy(&force_zero, &masked_force_zero, sizeof(force_zero));
   }
   tft.setTextSize(4);
   tft.setCursor(x_offset+60, y_offset);
@@ -114,6 +115,9 @@ void Interface::update_unit(const std::string& new_unit) {
 
 void Interface::update_force_zero() {
   force_zero = avgForce;
+  memcpy(&masked_force_zero, &force_zero, sizeof(force_zero));
+  auto handle = nvs_util::get_handle();
+  nvs_util::write("force_zero", masked_force_zero, handle.get());
 }
 
 void Interface::update_force_slope(const float actual) {

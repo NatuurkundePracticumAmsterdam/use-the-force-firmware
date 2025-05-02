@@ -58,7 +58,6 @@ void setup() {
   timerAlarmEnable(timer1);
   poll_lc();
   delay(500);
-  interface.update_force_zero();
   interface.clear();
 }
 
@@ -76,6 +75,7 @@ void loop() {
     if (interface.interface_update_interval == 0) {
       interface.interface_update_interval = INTERFACE_READ_LOOPS-1;
       interface.loop();
+      interface.forceVec = std::vector<int32_t>(INTERFACE_READ_LOOPS, 0);
   }
   
   delay(LOOP_DELAY);

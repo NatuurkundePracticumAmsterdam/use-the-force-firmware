@@ -111,10 +111,12 @@ static void get_args(const std::string& cmd, std::vector<std::string>& vec) {
 
 void poll_lc_active() {
   val = lc.quick_read();
+
   if (abs(val-lc.max_counts_zero) > abs(lc.max_counts-lc.max_counts_zero)) {
     motor.abort();
     // Serial.println("[ERROR]: strain too high, stopping motor now");
   }
+
   else if (returnRead) {
     if (singleRead) {
       Serial.printf("[VALUE]: %d\n", val);
@@ -126,7 +128,8 @@ void poll_lc_active() {
     }
     returnRead = false;
   }
-  interface.forceVec[interface.interface_update_interval] = val;
+
+  interface.forceVec[INTERFACE_READ_LOOPS-interface.interface_update_interval-1] = val;
 }
 
 static void parse_cmd(const std::string& cmd) {

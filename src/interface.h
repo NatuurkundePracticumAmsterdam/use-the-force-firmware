@@ -89,7 +89,7 @@ public:
     void update_unit(const std::string& new_unit);
     void update_force_zero();
     void update_force_slope(const float actual);
-    void save_force_slope();
+    void save_force_zero();
     void clear();
 
     uint32_t interface_update_interval = INTERFACE_READ_LOOPS-1;
@@ -113,6 +113,7 @@ private:
     std::string unit = " mN";
 
     uint64_t masked_force_slope;
+    uint32_t masked_force_zero;
     
     bool command_used = false;
 
