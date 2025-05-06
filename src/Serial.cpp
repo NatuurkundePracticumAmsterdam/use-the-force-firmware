@@ -32,26 +32,27 @@
 #define COMMANDS                                        \
   /* 0 Arguments */                                     \
   X(AB)  /* abort continuous read */                    \
-  X(ST)  /* stop motor */                               \
+  X(CM)  /* Count Max, set maximum force count */       \
+  X(CZ)  /* Count Zero, set maximum force count zero */ \
   X(GP)  /* get pos in mm */                            \
   X(GV)  /* get velocity in mm/s */                     \
-  X(SR)  /* single read */                              \
-  X(TR)  /* tare force value */                         \
+  X(HE)  /* Help command, with all commands */          \
   X(HM)  /* home stage */                               \
-  X(CZ)  /* Count Zero, set maximum force count zero */ \
-  X(CM)  /* Count Max, set maximum force count */       \
-  X(VR)  /* get version */                              \
   X(ID)  /* get motor id */                             \
   X(SD)  /* Serial Dump, sends what is in serial rn*/   \
+  X(SR)  /* single read */                              \
+  X(ST)  /* stop motor */                               \
+  X(TR)  /* tare force value */                         \
+  X(VR)  /* get version */                              \
                                                         \
   /* 1 Argument */                                      \
+  X(SF)  /* set calib force */                          \
   X(SP)  /* set pos in mm */                            \
   X(SV)  /* set velocity in mm/s */                     \
-  X(SF)  /* set calib force */                          \
+  X(UU)  /* update unit */                              \
   X(UX)  /* update interface x offset */                \
   X(UY)  /* update interface y offset */                \
   X(UL)  /* update interface y line spacing */          \
-  X(UU)  /* update unit */                              \
                                                         \
   /* 2 Arguments */                                     \
   X(CR)  /* continuous read for n milliseconds */       \
@@ -84,7 +85,7 @@ extern LoadCell lc;
 extern Interface interface;
 
 static bool correct_num_args(uint8_t num_args) {
-  if (current_cmd < SP && num_args == 0)
+  if (current_cmd < SF && num_args == 0)
     return true;
   if (current_cmd < CR && num_args == 1)
     return true;
@@ -278,6 +279,36 @@ void do_cmd(const std::string& cmd) {
     case SD:
       Serial.printf("\n");
       break;
+      case HE:
+        std::string help_message;
+        uint8_t args_count = 0;
+        
+        help_message += "--- 0 Arguments ---\n";
+        #define X(cmd) \
+            if (cmd < SF) { \
+                help_message += "#" #cmd ";\n"; \
+            }
+        COMMANDS
+        #undef X
+    
+        help_message += "\n--- 1 Argument ---\n";
+        #define X(cmd) \
+            if (cmd >= SF && cmd < CR) { \
+                help_message += "#" #cmd " <arg1>;\n"; \
+            }
+        COMMANDS
+        #undef X
+    
+        help_message += "\n--- 2 Arguments ---\n";
+        #define X(cmd) \
+            if (cmd == CR) { \
+                help_message += "#" #cmd " <arg1>, <arg2>;\n"; \
+            }
+        COMMANDS
+        #undef X
+    
+        Serial.printf("[COMMANDS]:\n%s", help_message.c_str());
+        break;
   }
   return;
 }
