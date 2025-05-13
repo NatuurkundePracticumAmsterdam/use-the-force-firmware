@@ -1,6 +1,7 @@
 #include "LoadCell.h"
 #include "Motor.h"
 #include "Poll.h"
+#include "interface.h"
 
 #include "esp32-hal-timer.h"
 #include "HardwareSerial.h"
@@ -31,26 +32,28 @@
 #define COMMANDS                                        \
   /* 0 Arguments */                                     \
   X(AB)  /* abort continuous read */                    \
-  X(ST)  /* stop motor */                               \
-  X(GP)  /* get pos in mm */                            \
-  X(GV)  /* get velocity in mm/s */                     \
-  X(SR)  /* single read */                              \
-  X(ID)  /* get motor id */                             \
-  X(HM)  /* home stage */                               \
   X(CM)  /* Count Max, set maximum force count */       \
   X(CZ)  /* Count Zero, set maximum force count zero */ \
+  X(GP)  /* get pos in mm */                            \
+  X(GV)  /* get velocity in mm/s */                     \
+  X(HE)  /* Help command, with all commands */          \
+  X(HM)  /* home stage */                               \
+  X(ID)  /* get motor id */                             \
+  X(SD)  /* Serial Dump, sends what is in serial rn*/   \
+  X(SR)  /* single read */                              \
+  X(ST)  /* stop motor */                               \
+  X(TR)  /* tare force value */                         \
   X(VR)  /* get version */                              \
                                                         \
-  X(GM)  /* DEPRICATED get read mode */                 \
-  X(TM)  /* DEPRICATED toggle read mode */              \
-  X(TR)  /* DEPRICATED tare load cell */                \
-  X(CL)  /* DEPRICATED calibrate load cell */           \
-  X(SC)  /* DEPRICATED save loadcell config to flash */ \
-                                                        \
   /* 1 Argument */                                      \
+  X(DC)  /* Display Command: true/false */              \
+  X(SF)  /* set calib force */                          \
   X(SP)  /* set pos in mm */                            \
-  X(SF)  /* DEPRICATED set calib force */               \
   X(SV)  /* set velocity in mm/s */                     \
+  X(UU)  /* update unit */                              \
+  X(UX)  /* update interface x offset */                \
+  X(UY)  /* update interface y offset */                \
+  X(UL)  /* update interface y line spacing */          \
                                                         \
   /* 2 Arguments */                                     \
   X(CR)  /* continuous read for n milliseconds */       \
@@ -64,6 +67,7 @@ enum commands {
 union arg {
   int32_t i;
   float f;
+  char s[10];
 };
 
 extern hw_timer_t *timer0;
@@ -73,15 +77,20 @@ int32_t val = 0;
 
 int8_t current_cmd;
 union arg current_args[2];
+bool display_cmd = true;
+char false_str[10] = "false";
 
 bool returnRead = false;
 bool singleRead = false;
 
 extern Motor motor;
 extern LoadCell lc;
+extern Interface interface;
 
 static bool correct_num_args(uint8_t num_args) {
-  if (current_cmd < SP && num_args == 0)
+  if (current_cmd < DC && num_args == 0)
+    return true;
+  if (current_cmd == DC && num_args <= 1)
     return true;
   if (current_cmd < CR && num_args == 1)
     return true;
@@ -108,10 +117,12 @@ static void get_args(const std::string& cmd, std::vector<std::string>& vec) {
 
 void poll_lc_active() {
   val = lc.quick_read();
+
   if (abs(val-lc.max_counts_zero) > abs(lc.max_counts-lc.max_counts_zero)) {
     motor.abort();
     // Serial.println("[ERROR]: strain too high, stopping motor now");
   }
+
   else if (returnRead) {
     if (singleRead) {
       Serial.printf("[VALUE]: %d\n", val);
@@ -123,6 +134,8 @@ void poll_lc_active() {
     }
     returnRead = false;
   }
+
+  interface.forceVec[INTERFACE_READ_LOOPS-interface.interface_update_interval-1] = val;
 }
 
 static void parse_cmd(const std::string& cmd) {
@@ -157,12 +170,30 @@ static void parse_cmd(const std::string& cmd) {
       case SF:
         current_args[0].f = atof(args[0].c_str());
         break;
+      case UU:
+        if (args[0].length() >= sizeof(current_args[0].s)) {
+          Serial.println("[ERROR]: Unit string too long");
+          current_cmd = -1;
+          return;
+        }
+        strncpy(current_args[0].s, args[0].c_str(), sizeof(current_args[0].s) - 1);
+        current_args[0].s[sizeof(current_args[0].s) - 1] = '\0';
+        break;
+      case DC:
+        if (args[0] == "false" || args[0] == " false") {
+          display_cmd = false;
+        } else {
+          display_cmd = true;
+        }
+        break;
       case CR:
         current_args[1].i = atoi(args[1].c_str());
       default:
         current_args[0].i = atoi(args[0].c_str());
         break;
     }
+  } else if (current_cmd == DC) {
+    display_cmd = true;
   }
   if (!correct_num_args(args.size()))
     current_cmd = -1;
@@ -182,6 +213,9 @@ void do_cmd(const std::string& cmd) {
   if (current_cmd == (uint32_t) -1) {
     Serial.println("[ERROR]: invalid command");
     return;
+  }
+  if (display_cmd) {
+    interface.show_command(cmd);
   }
   switch (current_cmd) {
     case AB:
@@ -209,13 +243,6 @@ void do_cmd(const std::string& cmd) {
       motor.home();
       Serial.printf("[INFO]: homing\n");
       break;
-    case GM:
-      Serial.printf("[INFO]: current mode is %s\n", lc.get_mode() ? "cal" : "raw");
-      break;
-    case TM:
-      Serial.printf("[INFO]: toggling mode\n");
-      lc.toggle_mode();
-      break;
     case SR:
       returnRead = true;
       singleRead = true;
@@ -230,20 +257,11 @@ void do_cmd(const std::string& cmd) {
       returnRead = true;
       break;
     case TR:
-      Serial.printf("[INFO]: tare loadcell\n");
-      lc.tare();
-      break;
-    case CL:
-      Serial.printf("[INFO]: ready for calibration\n");
-      lc.zero();
+      Serial.printf("[INFO]: taring force\n");
+      interface.update_force_zero();
       break;
     case SF:
-      Serial.printf("[INFO]: calibrating loadcell with value: %f\n", current_args[0].f);
-      lc.set_slope(current_args[0].f);
-      break;
-    case SC:
-      Serial.printf("[INFO]: writing load cell config to flash\n");
-      lc.save_state();
+      interface.update_force_slope(current_args[0].f);
       break;
     case CM:
       lc.max_counts = abs(val);
@@ -257,6 +275,59 @@ void do_cmd(const std::string& cmd) {
       break;
     case VR:
       Serial.printf("[VERSION]: %s\n", VERSION);
+      break;
+    case UX:
+      interface.update_x_offset(current_args[0].i);
+      Serial.printf("[INFO]: updated x offset to %d\n", current_args[0].i);
+      break;
+    case UY:
+      interface.update_y_offset(current_args[0].i);
+      Serial.printf("[INFO]: updated y offset to %d\n", current_args[0].i);
+      break;
+    case UL:
+      interface.update_line_height(current_args[0].i);
+      Serial.printf("[INFO]: updated line y offset to %d\n", current_args[0].i);
+      break;
+    case UU:
+      interface.update_unit(std::string(current_args[0].s));
+      Serial.printf("[INFO]: updated unit to %s\n", current_args[0].s);
+      break;
+    case DC:
+      if (display_cmd) {Serial.printf("Displaying commands\n");}
+      else {Serial.printf("Not displaying commands\n");}
+      break;
+    case SD:
+      Serial.printf("\n");
+      break;
+    case HE:
+      std::string help_message;
+      uint8_t args_count = 0;
+      
+      help_message += "--- 0 Arguments ---\n";
+      #define X(cmd) \
+          if (cmd < SF) { \
+              help_message += "#" #cmd ";\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      help_message += "\n--- 1 Argument ---\n";
+      #define X(cmd) \
+          if (cmd >= SF && cmd < CR) { \
+              help_message += "#" #cmd " <arg1>;\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      help_message += "\n--- 2 Arguments ---\n";
+      #define X(cmd) \
+          if (cmd == CR) { \
+              help_message += "#" #cmd " <arg1>, <arg2>;\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      Serial.printf("[COMMANDS]:\n%s", help_message.c_str());
       break;
   }
   return;
