@@ -37,6 +37,7 @@ Any serial command follows the form:
 ### 1 Argument
 Add an argument after the opcode, either with or without space. Make sure to end with ```;``` AFTER the argument.
 
+- ```DC```: Display Commands. If the display should show the commands that are sent. Either `true` or `false`. Only checks for `false`, enables display commands any other case. 
 - ```SF```: Set calibration Force. Takes a float. Calibrates the load cell based on the load cell's current reading and the provided argument. Only affects interface. Gets saved in memory and used on startup.
 - ```SP```: Set Position. Takes an integer in range [0, 47). 0 mm is the lowest position of the stage, 46 mm the highest. The stage must first be homed in order to set the position.
 - ```SV```: Set Velocity. Takes an integer in range [1, 200]. Sets the stage velocity in $\frac1{60}$ mm/s.

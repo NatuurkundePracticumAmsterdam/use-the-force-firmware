@@ -46,6 +46,7 @@
   X(VR)  /* get version */                              \
                                                         \
   /* 1 Argument */                                      \
+  X(DC)  /* Display Command: true/false */              \
   X(SF)  /* set calib force */                          \
   X(SP)  /* set pos in mm */                            \
   X(SV)  /* set velocity in mm/s */                     \
@@ -66,7 +67,7 @@ enum commands {
 union arg {
   int32_t i;
   float f;
-  char s[10]; // Added to store strings (adjust size as needed)
+  char s[10];
 };
 
 extern hw_timer_t *timer0;
@@ -76,6 +77,7 @@ int32_t val = 0;
 
 int8_t current_cmd;
 union arg current_args[2];
+bool display_cmd = true;
 
 bool returnRead = false;
 bool singleRead = false;
@@ -85,7 +87,9 @@ extern LoadCell lc;
 extern Interface interface;
 
 static bool correct_num_args(uint8_t num_args) {
-  if (current_cmd < SF && num_args == 0)
+  if (current_cmd < DC && num_args == 0)
+    return true;
+  if (current_cmd == DC && num_args <= 1)
     return true;
   if (current_cmd < CR && num_args == 1)
     return true;
@@ -200,7 +204,9 @@ void do_cmd(const std::string& cmd) {
     Serial.println("[ERROR]: invalid command");
     return;
   }
-  interface.show_command(cmd);
+  if (display_cmd) {
+    interface.show_command(cmd);
+  }
   switch (current_cmd) {
     case AB:
       timer0_isr_iter = 0;
@@ -276,39 +282,42 @@ void do_cmd(const std::string& cmd) {
       interface.update_unit(std::string(current_args[0].s));
       Serial.printf("[INFO]: updated unit to %s\n", current_args[0].s);
       break;
+    case DC:
+      if (current_args[0].s == "false" || current_args[0].s == " false") {display_cmd = false;}
+      else {display_cmd = true;}
     case SD:
       Serial.printf("\n");
       break;
-      case HE:
-        std::string help_message;
-        uint8_t args_count = 0;
-        
-        help_message += "--- 0 Arguments ---\n";
-        #define X(cmd) \
-            if (cmd < SF) { \
-                help_message += "#" #cmd ";\n"; \
-            }
-        COMMANDS
-        #undef X
-    
-        help_message += "\n--- 1 Argument ---\n";
-        #define X(cmd) \
-            if (cmd >= SF && cmd < CR) { \
-                help_message += "#" #cmd " <arg1>;\n"; \
-            }
-        COMMANDS
-        #undef X
-    
-        help_message += "\n--- 2 Arguments ---\n";
-        #define X(cmd) \
-            if (cmd == CR) { \
-                help_message += "#" #cmd " <arg1>, <arg2>;\n"; \
-            }
-        COMMANDS
-        #undef X
-    
-        Serial.printf("[COMMANDS]:\n%s", help_message.c_str());
-        break;
+    case HE:
+      std::string help_message;
+      uint8_t args_count = 0;
+      
+      help_message += "--- 0 Arguments ---\n";
+      #define X(cmd) \
+          if (cmd < SF) { \
+              help_message += "#" #cmd ";\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      help_message += "\n--- 1 Argument ---\n";
+      #define X(cmd) \
+          if (cmd >= SF && cmd < CR) { \
+              help_message += "#" #cmd " <arg1>;\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      help_message += "\n--- 2 Arguments ---\n";
+      #define X(cmd) \
+          if (cmd == CR) { \
+              help_message += "#" #cmd " <arg1>, <arg2>;\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      Serial.printf("[COMMANDS]:\n%s", help_message.c_str());
+      break;
   }
   return;
 }
