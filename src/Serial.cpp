@@ -78,6 +78,7 @@ int32_t val = 0;
 int8_t current_cmd;
 union arg current_args[2];
 bool display_cmd = true;
+char false_str[10] = "false";
 
 bool returnRead = false;
 bool singleRead = false;
@@ -178,12 +179,21 @@ static void parse_cmd(const std::string& cmd) {
         strncpy(current_args[0].s, args[0].c_str(), sizeof(current_args[0].s) - 1);
         current_args[0].s[sizeof(current_args[0].s) - 1] = '\0';
         break;
+      case DC:
+        if (args[0] == "false" || args[0] == " false") {
+          display_cmd = false;
+        } else {
+          display_cmd = true;
+        }
+        break;
       case CR:
         current_args[1].i = atoi(args[1].c_str());
       default:
         current_args[0].i = atoi(args[0].c_str());
         break;
     }
+  } else if (current_cmd == DC) {
+    display_cmd = true;
   }
   if (!correct_num_args(args.size()))
     current_cmd = -1;
@@ -283,8 +293,9 @@ void do_cmd(const std::string& cmd) {
       Serial.printf("[INFO]: updated unit to %s\n", current_args[0].s);
       break;
     case DC:
-      if (current_args[0].s == "false" || current_args[0].s == " false") {display_cmd = false;}
-      else {display_cmd = true;}
+      if (display_cmd) {Serial.printf("Displaying commands\n");}
+      else {Serial.printf("Not displaying commands\n");}
+      break;
     case SD:
       Serial.printf("\n");
       break;
