@@ -32,26 +32,28 @@
 #define COMMANDS                                        \
   /* 0 Arguments */                                     \
   X(AB)  /* abort continuous read */                    \
-  X(ST)  /* stop motor */                               \
+  X(CM)  /* Count Max, set maximum force count */       \
+  X(CZ)  /* Count Zero, set maximum force count zero */ \
   X(GP)  /* get pos in mm */                            \
   X(GV)  /* get velocity in mm/s */                     \
-  X(SR)  /* single read */                              \
-  X(TR)  /* tare force value */                         \
+  X(HE)  /* Help command, with all commands */          \
   X(HM)  /* home stage */                               \
-  X(CZ)  /* Count Zero, set maximum force count zero */ \
-  X(CM)  /* Count Max, set maximum force count */       \
-  X(VR)  /* get version */                              \
   X(ID)  /* get motor id */                             \
   X(SD)  /* Serial Dump, sends what is in serial rn*/   \
+  X(SR)  /* single read */                              \
+  X(ST)  /* stop motor */                               \
+  X(TR)  /* tare force value */                         \
+  X(VR)  /* get version */                              \
                                                         \
   /* 1 Argument */                                      \
+  X(DC)  /* Display Command: true/false */              \
+  X(SF)  /* set calib force */                          \
   X(SP)  /* set pos in mm */                            \
   X(SV)  /* set velocity in mm/s */                     \
-  X(SF)  /* set calib force */                          \
+  X(UU)  /* update unit */                              \
   X(UX)  /* update interface x offset */                \
   X(UY)  /* update interface y offset */                \
   X(UL)  /* update interface y line spacing */          \
-  X(UU)  /* update unit */                              \
                                                         \
   /* 2 Arguments */                                     \
   X(CR)  /* continuous read for n milliseconds */       \
@@ -65,7 +67,7 @@ enum commands {
 union arg {
   int32_t i;
   float f;
-  char s[10]; // Added to store strings (adjust size as needed)
+  char s[10];
 };
 
 extern hw_timer_t *timer0;
@@ -75,6 +77,8 @@ int32_t val = 0;
 
 int8_t current_cmd;
 union arg current_args[2];
+bool display_cmd = true;
+char false_str[10] = "false";
 
 bool returnRead = false;
 bool singleRead = false;
@@ -84,7 +88,9 @@ extern LoadCell lc;
 extern Interface interface;
 
 static bool correct_num_args(uint8_t num_args) {
-  if (current_cmd < SP && num_args == 0)
+  if (current_cmd < DC && num_args == 0)
+    return true;
+  if (current_cmd == DC && num_args <= 1)
     return true;
   if (current_cmd < CR && num_args == 1)
     return true;
@@ -173,12 +179,21 @@ static void parse_cmd(const std::string& cmd) {
         strncpy(current_args[0].s, args[0].c_str(), sizeof(current_args[0].s) - 1);
         current_args[0].s[sizeof(current_args[0].s) - 1] = '\0';
         break;
+      case DC:
+        if (args[0] == "false" || args[0] == " false") {
+          display_cmd = false;
+        } else {
+          display_cmd = true;
+        }
+        break;
       case CR:
         current_args[1].i = atoi(args[1].c_str());
       default:
         current_args[0].i = atoi(args[0].c_str());
         break;
     }
+  } else if (current_cmd == DC) {
+    display_cmd = true;
   }
   if (!correct_num_args(args.size()))
     current_cmd = -1;
@@ -199,7 +214,9 @@ void do_cmd(const std::string& cmd) {
     Serial.println("[ERROR]: invalid command");
     return;
   }
-  interface.show_command(cmd);
+  if (display_cmd) {
+    interface.show_command(cmd);
+  }
   switch (current_cmd) {
     case AB:
       timer0_isr_iter = 0;
@@ -275,8 +292,42 @@ void do_cmd(const std::string& cmd) {
       interface.update_unit(std::string(current_args[0].s));
       Serial.printf("[INFO]: updated unit to %s\n", current_args[0].s);
       break;
+    case DC:
+      if (display_cmd) {Serial.printf("Displaying commands\n");}
+      else {Serial.printf("Not displaying commands\n");}
+      break;
     case SD:
       Serial.printf("\n");
+      break;
+    case HE:
+      std::string help_message;
+      uint8_t args_count = 0;
+      
+      help_message += "--- 0 Arguments ---\n";
+      #define X(cmd) \
+          if (cmd < SF) { \
+              help_message += "#" #cmd ";\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      help_message += "\n--- 1 Argument ---\n";
+      #define X(cmd) \
+          if (cmd >= SF && cmd < CR) { \
+              help_message += "#" #cmd " <arg1>;\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      help_message += "\n--- 2 Arguments ---\n";
+      #define X(cmd) \
+          if (cmd == CR) { \
+              help_message += "#" #cmd " <arg1>, <arg2>;\n"; \
+          }
+      COMMANDS
+      #undef X
+  
+      Serial.printf("[COMMANDS]:\n%s", help_message.c_str());
       break;
   }
   return;

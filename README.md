@@ -18,52 +18,40 @@ Any serial command follows the form:
 
 ## List of valid opcodes:
 ### 0 Arguments
- - ```AB```: Abort continuous read. If called while a continuous read is active, at most one more read will occur.
- 
- - ```ST```: Stop motor. If called will simulate counts going above threshold. Most times when called while moving will crash stepper motor controller, requiring disconnection of power. Else can home.
- **!!! DOES NOT WORK DURING HOME !!!**
+- ```AB```: Abort continuous read. If called while a continuous read is active, at most one more read will occur.
+- ```CM```: Set Counts Maximum. A way to set the abort limit by hanging the maximum allowed load on the load cell. The order of ```CZ``` and ```CM``` is not important, but it is recommended to do both.
+- ```CZ```: Set Counts Zero (for maximum counts). This point will be seen as a zero. Make sure to keep the load cell with the same direction facing up, as values between which side is up may differ a lot.
+- ```GP```: Get position. Returns the current position in mm. If the current position is not known, UINT8_MAX (255) is returned.
+- ```GV```: Get Velocity. Returns the current velocity as $\frac1{60}$ mm/s.
+- ```HE```: Help command. Returns the list of all commands.
+- ```HM```: Home. Takes no argument. Homes the stage. This is done by translating downwards until the stop is hit, and then translating upwards 1 mm.
+- ```ID```: Get motor ID that is used for the stepper motor.
+- ```SR```: Single Read. Returns the load cell's read value.
+- ```ST```: Stop motor. If called will simulate counts going above threshold. Most times when called while moving will crash stepper motor controller, requiring disconnection of power. Else can home.
+    **!!! DOES NOT WORK DURING HOME !!!**
+- ```TR```: Tare. Takes no argument. Sets the load cell's current reading as its offset, effectively zeroing it. Only works for interface. Gets saved in memory and used on startup.
+- ```VR```: Get firmware version.
 
- - ```GP```: Get position. Returns the current position in mm. If the current position is not known, UINT8_MAX (255) is returned.
-
- - ```GV```: Get Velocity. Returns the current velocity as $\frac1{60}$ mm/s.
-
- - ```SR```: Single Read. Returns the load cell's read value.
-
- - ```TR```: Tare. Takes no argument. Sets the load cell's current reading as its offset, effectively zeroing it. Only works for interface. Gets saved in memory and used on startup.
-
-  - ```HM```: Home. Takes no argument. Homes the stage. This is done by translating downwards until the stop is hit, and then translating upwards 1 mm.
-
- - ```CZ```: Set Counts Zero (for maximum counts). This point will be seen as a zero. Make sure to keep the load cell with the same direction facing up, as values between which side is up may differ a lot.
- 
- - ```CM```: Set Counts Maximum. A way to set the abort limit by hanging the maximum allowed load on the load cell. The order of ```CZ``` and ```CM``` is not important, but it is recommended to do both.
-
- - ```VR```: Get firmware version.
-
- - ```ID```: Get motor ID that is used for the stepper motor. 
 ---
 
 ### 1 Argument
 Add an argument after the opcode, either with or without space. Make sure to end with ```;``` AFTER the argument.
 
- - ```SP```: Set Position. Takes an integer in range [0, 47). 0 mm is the lowest position of the stage, 46 mm the highest. The stage must first be homed in order to set the position.
- 
- - ```SV```: Set Velocity. Takes an integer in range [1, 200]. Sets the stage velocity in $\frac1{60}$ mm/s.
+- ```DC```: Display Commands. If the display should show the commands that are sent. Either `true` or `false`. Only checks for `false`, enables display commands any other case. 
+- ```SF```: Set calibration Force. Takes a float. Calibrates the load cell based on the load cell's current reading and the provided argument. Only affects interface. Gets saved in memory and used on startup.
+- ```SP```: Set Position. Takes an integer in range [0, 47). 0 mm is the lowest position of the stage, 46 mm the highest. The stage must first be homed in order to set the position.
+- ```SV```: Set Velocity. Takes an integer in range [1, 200]. Sets the stage velocity in $\frac1{60}$ mm/s.
+- ```UL```: Updates interface text line height.
+- ```UU```: Updates interface displayed unit. Maximum of 8 chars, 2 to 4 recommended.
+- ```UX```: Updates interface text x offset.
+- ```UY```: Updates interface text y offset.
 
- - ```SF```: Set calibration Force. Takes a float. Calibrates the load cell based on the load cell's current reading and the provided argument. Only affects interface. Gets saved in memory and used on startup.
-
- - ```UX```: Updates interface text x offset.
-
- - ```UY```: Updates interface text y offset.
-
- - ```UL```: Updates interface text line height.
-
- - ```UU```: Updates interface displayed unit. Maximum of 8 chars, 2 to 4 recommended.
 ---
 
 ### 2 Arguments
-Add multiple arguments by seperating them with a ```,``` and ending with ```;``` AFTER the arguments.
+Add multiple arguments by separating them with a ```,``` and ending with ```;``` AFTER the arguments.
 
- - ```CR```: Continuous Read. Takes two integers in range [1, INT_MAX or 2147483647]. The first argument represents the number of reads to perform. The second argument represents the milliseconds in between reads. 
+- ```CR```: Continuous Read. Takes two integers in range [1, INT_MAX or 2147483647]. The first argument represents the number of reads to perform. The second argument represents the milliseconds in between reads.
 ---
 
 *A note on calibration*: While the use of two separate commands may seem tedious, it is necessary for accurate calibration. This is due to the fact that the load cell must be zeroed **before** any calibrating force is applied.
