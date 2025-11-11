@@ -5,7 +5,16 @@
 void Motor::begin() {
   Serial2.begin(9600, SERIAL_8N1, pin_rx_, pin_tx_);
   delay(200);
-  Serial2.print("ID=123\r\n");
+
+  String msg;
+  Serial2.setTimeout(5000);
+  while (true) {
+    Serial2.print("ID=123\r\n");
+    Serial2.print("ID\r\n");
+    msg = Serial2.readString();
+    if (msg.startsWith("ok123")) { return; }
+    else if (msg.length()) { Serial.printf("%s\n", msg.c_str()); }
+  }
 }
 
 void Motor::set_pos_mm(uint8_t mm) {
